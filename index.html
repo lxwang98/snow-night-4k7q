@@ -1055,6 +1055,29 @@
   boughCards.visible = true;
   scene.add(boughCards);
 
+  // soft volumetric mist inside the cone: alpha-composited clouds hide the sky
+  var ccPos = [], ccCol = [], ccSize = [], ccPhase = [], ccTw = [], ccDelay = [];
+  for (var cci = 0; cci < 5200; cci++) {
+    var cch = Math.pow(Math.random(), 0.92);
+    var ccy = tierY(cch);
+    var ccr = tierRadius(cch) * (0.08 + Math.random() * 0.78);
+    var cca = Math.random() * TAU;
+    pickColor(tmpColor, false, cch);
+    tmpColor.lerp(whiteCol, 0.14);
+    tmpColor.offsetHSL(0, 0.09, -0.02);
+    ccPos.push(Math.cos(cca) * ccr, ccy + (Math.random() - 0.5) * 0.25, Math.sin(cca) * ccr);
+    ccCol.push(tmpColor.r, tmpColor.g, tmpColor.b);
+    ccSize.push(0.45 + Math.random() * 0.72);
+    ccPhase.push(Math.random() * TAU);
+    ccTw.push(0.10);
+    ccDelay.push(0.05 + cch * 0.55 + Math.random() * 0.16);
+  }
+  var coreCloud = makePoints(ccPos, ccCol, ccSize, ccPhase, ccTw, ccDelay, makeTexPointMaterial(texCloud, {
+    sizeScale: 1, opacity: 0.17, blending: THREE.NormalBlending
+  }));
+  coreCloud.renderOrder = -1;
+  scene.add(coreCloud);
+
   // body textures are kept for future variants but the tree uses bough cards
 
   // fluffy bokeh around branch tips
