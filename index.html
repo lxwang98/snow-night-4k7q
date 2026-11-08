@@ -319,6 +319,34 @@
     ctx.fillRect(0, 0, W, H);
   }, 128);
 
+  // soft aurora ribbons, painted once and used as a huge backdrop sprite
+  var texAurora = makeTexture(256, function (ctx, s) {
+    var W = s, H = 512;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.filter = 'blur(14px)';
+    var bands = [
+      { x: 52, amp: 30, col: '255,150,215', a: 0.32 },
+      { x: 128, amp: 44, col: '170,215,255', a: 0.26 },
+      { x: 196, amp: 26, col: '215,170,255', a: 0.24 }
+    ];
+    for (var bi2 = 0; bi2 < bands.length; bi2++) {
+      var bd = bands[bi2];
+      var lg = ctx.createLinearGradient(0, 0, 0, H);
+      lg.addColorStop(0, 'rgba(' + bd.col + ',0)');
+      lg.addColorStop(0.28, 'rgba(' + bd.col + ',' + bd.a + ')');
+      lg.addColorStop(0.62, 'rgba(' + bd.col + ',' + (bd.a * 0.55) + ')');
+      lg.addColorStop(1, 'rgba(' + bd.col + ',0)');
+      ctx.strokeStyle = lg;
+      ctx.lineWidth = 30;
+      ctx.beginPath();
+      ctx.moveTo(bd.x, 0);
+      ctx.bezierCurveTo(bd.x + bd.amp, H * 0.3, bd.x - bd.amp, H * 0.66, bd.x + bd.amp * 0.4, H);
+      ctx.stroke();
+    }
+    ctx.filter = 'none';
+  }, 512);
+
   // painted tree body: a dark layered silhouette covered with needle boughs
   var bodyCanvas = document.createElement('canvas');
   bodyCanvas.width = 1024; bodyCanvas.height = 1024;
@@ -1208,7 +1236,8 @@
         var lscale = (0.145 + Math.random() * 0.105) * (1.02 - 0.24 * ctt);
         if (lk === 14) lscale *= 1.25;
         pickColor(tmpColor, Math.random() < 0.30, ctt);
-        tmpColor.lerp(whiteCol, 0.03 + Math.random() * 0.10);
+        tmpColor.offsetHSL(0, 0.14, -0.035);
+        tmpColor.lerp(whiteCol, 0.02 + Math.random() * 0.05);
         leafXforms.push({
           x: lx, y: ly2, z: lz,
           sx: lscale * (1.05 + Math.random() * 0.30),
@@ -1243,9 +1272,9 @@
 
   var leafGeo = new THREE.IcosahedronGeometry(1, 1);
   var leafMat = new THREE.MeshLambertMaterial({
-    color: 0xffffff,
+    color: 0xffeef8,
     emissive: 0x2a172b,
-    emissiveIntensity: 0.32
+    emissiveIntensity: 0.26
   });
   var leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, leafXforms.length);
   var e4 = new THREE.Euler();
@@ -1276,7 +1305,7 @@
 
   // inner glow behind the tree
   var treeHaloMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffc6e6, transparent: true, opacity: 0.16,
+    map: texGlow, color: 0xffc6e6, transparent: true, opacity: 0.22,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var treeHalo = new THREE.Sprite(treeHaloMat);
@@ -1286,7 +1315,7 @@
   scene.add(treeHalo);
 
   var groundGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffd9ee, transparent: true, opacity: 0.34,
+    map: texGlow, color: 0xffcf9f, transparent: true, opacity: 0.46,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   }));
   groundGlow.position.set(0, -3.55, -0.6);
@@ -1315,6 +1344,40 @@
     scene.add(as);
   }
 
+  // wide pastel light washes behind the tree, like slow aurora
+  var auroraSprites = [];
+  var washSpecs = [
+    { x: -4.6, y: 2.6, z: -5.6, sx: 11.5, sy: 17.5, c: 0xff8fc8, o: 0.11, r: -0.32 },
+    { x: 4.4, y: 3.8, z: -6.2, sx: 10.5, sy: 16.0, c: 0x9fdcff, o: 0.10, r: 0.28 },
+    { x: 0.2, y: 0.6, z: -7.0, sx: 14.0, sy: 15.0, c: 0xc9a8ff, o: 0.075, r: 0.05 }
+  ];
+  for (var wi = 0; wi < washSpecs.length; wi++) {
+    var ws = washSpecs[wi];
+    var wm = new THREE.SpriteMaterial({
+      map: texGlow, color: ws.c, transparent: true, opacity: ws.o,
+      blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+      rotation: ws.r
+    });
+    var wsp = new THREE.Sprite(wm);
+    wsp.position.set(ws.x, ws.y, ws.z);
+    wsp.scale.set(ws.sx, ws.sy, 1);
+    wsp.renderOrder = -4;
+    scene.add(wsp);
+    auroraSprites.push({ mat: wm, base: ws.r, baseO: ws.o, phase: Math.random() * TAU });
+  }
+
+  // painted aurora curtain behind the tree
+  var auroraCurtainMat = new THREE.SpriteMaterial({
+    map: texAurora, color: 0xffffff, transparent: true, opacity: 0.44,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    rotation: -0.04
+  });
+  var auroraCurtain = new THREE.Sprite(auroraCurtainMat);
+  auroraCurtain.position.set(0, 1.2, -8.2);
+  auroraCurtain.scale.set(15.5, 20.5, 1);
+  auroraCurtain.renderOrder = -5;
+  scene.add(auroraCurtain);
+
   // spiral warm garland
   var gPos = [], gCol = [], gSize = [], gPhase = [], gTw = [], gDelay = [];
   var GARLAND = 900;
@@ -1324,28 +1387,52 @@
     var gr = tierRadius(gt) * (0.94 + Math.sin(gt * 44) * 0.025);
     var gy = tierY(gt) - 0.05 + Math.sin(gt * 60) * 0.02;
     gPos.push(Math.cos(ga) * gr, gy, Math.sin(ga) * gr);
-    var warm = new THREE.Color().setHSL(0.095 + Math.random() * 0.045, 0.62, 0.80);
+    var warm = new THREE.Color();
+    var gw = Math.random();
+    if (gw < 0.52) warm.setHSL(0.095 + Math.random() * 0.035, 0.55, 0.82);
+    else if (gw < 0.82) warm.setHSL(0.91 + Math.random() * 0.05, 0.52, 0.82);
+    else warm.setHSL(0.56 + Math.random() * 0.05, 0.42, 0.86);
     gCol.push(warm.r, warm.g, warm.b);
-    gSize.push(0.105 + Math.random() * 0.085);
+    gSize.push(0.12 + Math.random() * 0.12);
     gPhase.push(Math.random() * TAU);
     gTw.push(0.95);
     gDelay.push(0.15 + gt * 0.5 + Math.random() * 0.12);
   }
-  var garland = makePoints(gPos, gCol, gSize, gPhase, gTw, gDelay, makePointMaterial({ sizeScale: 1, opacity: 0.95, sway: 0.015 }));
+  var garland = makePoints(gPos, gCol, gSize, gPhase, gTw, gDelay, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.90, depthTest: false, blending: THREE.NormalBlending }));
+  garland.renderOrder = 6;
   scene.add(garland);
+
+  // larger warm bulbs punctuating the garland
+  var gbPos = [], gbCol = [], gbSize = [], gbPhase = [], gbTw = [], gbDelay = [];
+  for (var gbi = 0; gbi < gPos.length / 3; gbi += 9) {
+    gbPos.push(gPos[gbi * 3], gPos[gbi * 3 + 1], gPos[gbi * 3 + 2]);
+    var gbc = new THREE.Color();
+    gbc.setHSL(0.095 + Math.random() * 0.02, 0.62, 0.82);
+    gbCol.push(gbc.r, gbc.g, gbc.b);
+    gbSize.push(0.34 + Math.random() * 0.14);
+    gbPhase.push(Math.random() * TAU);
+    gbTw.push(0.75);
+    gbDelay.push(0.15 + Math.random() * 0.4);
+  }
+  var garlandBulbs = makePoints(gbPos, gbCol, gbSize, gbPhase, gbTw, gbDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.95, depthTest: false, blending: THREE.NormalBlending
+  }));
+  garlandBulbs.frustumCulled = false;
+  garlandBulbs.renderOrder = 7;
+  scene.add(garlandBulbs);
 
   // pearl ornaments
   var oPos = [], oCol = [], oSize = [], oPhase = [], oTw = [], oDelay = [], oRot = [];
-  var ornamentColors = ['#ffe4b8', '#ffb7d8', '#c9b6ff', '#a8e6ff', '#b9ffe6', '#fff4e2'];
-  for (var oi = 0; oi < 130; oi++) {
+  var ornamentColors = ['#ffcf8a', '#ff9fc8', '#b99cff', '#8fdcff', '#9dffd0', '#fff0d0'];
+  for (var oi = 0; oi < 120; oi++) {
     var ot = 0.05 + Math.random() * 0.88;
     var oa = Math.random() * TAU;
-    var or = tierRadius(ot) * (0.78 + Math.random() * 0.26);
+    var or = tierRadius(ot) * (0.86 + Math.random() * 0.18);
     var oy = tierY(ot) - 0.10 + (Math.random() - 0.5) * 0.28;
     oPos.push(Math.cos(oa) * or, oy, Math.sin(oa) * or);
     var oc = new THREE.Color(ornamentColors[Math.floor(Math.random() * ornamentColors.length)]);
     oCol.push(oc.r, oc.g, oc.b);
-    oSize.push(0.26 + Math.random() * 0.34);
+    oSize.push(0.28 + Math.random() * 0.24);
     oPhase.push(Math.random() * TAU);
     oTw.push(0.65);
     oDelay.push(0.25 + Math.random() * 0.55);
@@ -1359,22 +1446,44 @@
   ornamentGeo.setAttribute('aTwinkle', new THREE.Float32BufferAttribute(oTw, 1));
   ornamentGeo.setAttribute('aDelay', new THREE.Float32BufferAttribute(oDelay, 1));
   ornamentGeo.setAttribute('aRot', new THREE.Float32BufferAttribute(oRot, 1));
-  var ornaments = new THREE.Points(ornamentGeo, makeTexPointMaterial(texPearl, { sizeScale: 1, opacity: 1, depthTest: false }));
+  var ornaments = new THREE.Points(ornamentGeo, makeTexPointMaterial(texPearl, { sizeScale: 1, opacity: 0.96, depthTest: false, blending: THREE.NormalBlending }));
   ornaments.frustumCulled = false;
   scene.add(ornaments);
 
+  // a handful of larger glowing baubles so the decoration reads at a glance
+  var bbPos = [], bbCol = [], bbSize = [], bbPhase = [], bbTw = [], bbDelay = [];
+  var bbColors = ['#ff8fc0', '#8fd0ff', '#ffd08a', '#c9a8ff', '#a8ffd8'];
+  for (var bbi = 0; bbi < 22; bbi++) {
+    var bbt = 0.12 + Math.random() * 0.78;
+    var bba = Math.random() * TAU;
+    var bbr = tierRadius(bbt) * (0.94 + Math.random() * 0.05);
+    bbPos.push(Math.cos(bba) * bbr, tierY(bbt) - 0.12 + (Math.random() - 0.5) * 0.3, Math.sin(bba) * bbr);
+    var bbc = new THREE.Color(bbColors[Math.floor(Math.random() * bbColors.length)]);
+    bbCol.push(bbc.r, bbc.g, bbc.b);
+    bbSize.push(0.46 + Math.random() * 0.26);
+    bbPhase.push(Math.random() * TAU);
+    bbTw.push(0.55);
+    bbDelay.push(0.2 + Math.random() * 0.4);
+  }
+  var bigBaubles = makePoints(bbPos, bbCol, bbSize, bbPhase, bbTw, bbDelay, makeTexPointMaterial(texPearl, {
+    sizeScale: 1, opacity: 0.98, depthTest: false, blending: THREE.NormalBlending
+  }));
+  bigBaubles.frustumCulled = false;
+  bigBaubles.renderOrder = 7;
+  scene.add(bigBaubles);
+
   // saturated fairy bulbs tucked into the boughs
-  var bulbColors = ['#ff7fb8', '#7fddff', '#a9ffcf', '#ffd08a', '#c79bff', '#ff9fce'];
+  var bulbColors = ['#ffd79a', '#ff9fc8', '#8fdcff', '#b9ffd9', '#ffc28a', '#d4b0ff', '#ffb8dd', '#fff0c8'];
   var lbPos = [], lbCol = [], lbSize = [], lbPhase = [], lbTw = [], lbDelay = [], lbRot = [];
-  for (var li = 0; li < 58; li++) {
+  for (var li = 0; li < 84; li++) {
     var ltier = Math.floor(Math.random() * (TIERS - 1));
     var lt = (ltier + 0.55 + Math.random() * 0.4) / TIERS;
     var la = Math.random() * TAU;
-    var lr = tierRadius(lt) * (0.86 + Math.random() * 0.12);
+    var lr = tierRadius(lt) * (0.88 + Math.random() * 0.12);
     lbPos.push(Math.cos(la) * lr, tierY(lt) - 0.14 - Math.random() * 0.16, Math.sin(la) * lr);
     var lc = new THREE.Color(bulbColors[Math.floor(Math.random() * bulbColors.length)]);
     lbCol.push(lc.r, lc.g, lc.b);
-    lbSize.push(0.16 + Math.random() * 0.16);
+    lbSize.push(0.26 + Math.random() * 0.20);
     lbPhase.push(Math.random() * TAU);
     lbTw.push(0.7);
     lbDelay.push(0.2 + Math.random() * 0.5);
@@ -1388,9 +1497,102 @@
   bulbGeo.setAttribute('aTwinkle', new THREE.Float32BufferAttribute(lbTw, 1));
   bulbGeo.setAttribute('aDelay', new THREE.Float32BufferAttribute(lbDelay, 1));
   bulbGeo.setAttribute('aRot', new THREE.Float32BufferAttribute(lbRot, 1));
-  var bulbs = new THREE.Points(bulbGeo, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.9, depthTest: false }));
+  var bulbs = new THREE.Points(bulbGeo, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.98, depthTest: false, blending: THREE.NormalBlending }));
   bulbs.frustumCulled = false;
+  bulbs.renderOrder = 6;
   scene.add(bulbs);
+
+  // scattered little star charms on the boughs
+  var scPos = [], scCol = [], scSize = [], scPhase = [], scTw = [], scDelay = [];
+  var charmColors = ['#ffe7b8', '#ffc4e2', '#d8c4ff', '#bfe8ff', '#fff6e6'];
+  for (var sci = 0; sci < 38; sci++) {
+    var sct = 0.08 + Math.random() * 0.84;
+    var sca = Math.random() * TAU;
+    var scr = tierRadius(sct) * (0.98 + Math.random() * 0.06);
+    scPos.push(Math.cos(sca) * scr, tierY(sct) - 0.08 + (Math.random() - 0.5) * 0.3, Math.sin(sca) * scr);
+    var scc = new THREE.Color(charmColors[Math.floor(Math.random() * charmColors.length)]);
+    scCol.push(scc.r, scc.g, scc.b);
+    scSize.push(0.26 + Math.random() * 0.26);
+    scPhase.push(Math.random() * TAU);
+    scTw.push(0.85);
+    scDelay.push(0.2 + Math.random() * 0.5);
+  }
+  var starCharms = makePoints(scPos, scCol, scSize, scPhase, scTw, scDelay, makeTexPointMaterial(texStar, {
+    sizeScale: 1, opacity: 0.82, depthTest: false
+  }));
+  starCharms.frustumCulled = false;
+  starCharms.renderOrder = 7;
+  scene.add(starCharms);
+
+  // big soft bokeh orbs drifting around the tree
+  var orbPos = [], orbCol = [], orbSize = [], orbPhase = [], orbTw = [], orbDelay = [];
+  for (var obi = 0; obi < 64; obi++) {
+    var obt = 0.04 + Math.random() * 0.92;
+    var oba = Math.random() * TAU;
+    var obr = tierRadius(obt) * (1.02 + Math.random() * 0.34);
+    orbPos.push(Math.cos(oba) * obr, tierY(obt) + (Math.random() - 0.5) * 0.8, Math.sin(oba) * obr);
+    var obc = new THREE.Color();
+    var oh = Math.random();
+    obc.setHSL(oh < 0.28 ? 0.10 : (oh < 0.64 ? 0.93 : 0.58), 0.50 + Math.random() * 0.18, 0.82);
+    orbCol.push(obc.r, obc.g, obc.b);
+    orbSize.push(0.32 + Math.random() * 0.72);
+    orbPhase.push(Math.random() * TAU);
+    orbTw.push(0.28);
+    orbDelay.push(0.1 + Math.random() * 0.6);
+  }
+  var orbs = makePoints(orbPos, orbCol, orbSize, orbPhase, orbTw, orbDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.20, depthTest: false
+  }));
+  orbs.frustumCulled = false;
+  orbs.renderOrder = 5;
+  scene.add(orbs);
+
+  // dense tiny fairy lights scattered over the whole tree
+  var fPos = [], fCol = [], fSize = [], fPhase = [], fTw = [], fDelay = [];
+  for (var fi = 0; fi < 220; fi++) {
+    var ft = 0.07 + Math.random() * 0.87;
+    var fa = Math.random() * TAU;
+    var fr = tierRadius(ft) * (0.97 + Math.random() * 0.06);
+    fPos.push(Math.cos(fa) * fr, tierY(ft) - 0.06 + (Math.random() - 0.5) * 0.24, Math.sin(fa) * fr);
+    var fc = new THREE.Color();
+    var fw = Math.random();
+    if (fw < 0.68) fc.setHSL(0.10 + Math.random() * 0.035, 0.52, 0.86);
+    else if (fw < 0.88) fc.setHSL(0.92 + Math.random() * 0.04, 0.50, 0.86);
+    else fc.setHSL(0.57 + Math.random() * 0.04, 0.42, 0.88);
+    fCol.push(fc.r, fc.g, fc.b);
+    fSize.push(0.07 + Math.random() * 0.09);
+    fPhase.push(Math.random() * TAU);
+    fTw.push(0.9);
+    fDelay.push(0.15 + Math.random() * 0.55);
+  }
+  var fairyLights = makePoints(fPos, fCol, fSize, fPhase, fTw, fDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.92, depthTest: false
+  }));
+  fairyLights.frustumCulled = false;
+  fairyLights.renderOrder = 6;
+  scene.add(fairyLights);
+
+  // out-of-focus foreground bokeh for depth
+  var fgPos = [], fgCol = [], fgSize = [], fgPhase = [], fgTw = [], fgDelay = [];
+  for (var fgi = 0; fgi < 14; fgi++) {
+    var fga = Math.random() * TAU;
+    var fgr = 4.2 + Math.random() * 3.0;
+    fgPos.push(Math.cos(fga) * fgr, -2.0 + Math.random() * 7.6, 2.0 + Math.random() * 2.8);
+    var fgc = new THREE.Color();
+    var fgh = Math.random();
+    fgc.setHSL(fgh < 0.4 ? 0.10 : (fgh < 0.72 ? 0.93 : 0.58), 0.50, 0.82);
+    fgCol.push(fgc.r, fgc.g, fgc.b);
+    fgSize.push(1.1 + Math.random() * 1.5);
+    fgPhase.push(Math.random() * TAU);
+    fgTw.push(0.18);
+    fgDelay.push(0.2 + Math.random() * 0.5);
+  }
+  var foregroundBokeh = makePoints(fgPos, fgCol, fgSize, fgPhase, fgTw, fgDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.14, depthTest: false
+  }));
+  foregroundBokeh.frustumCulled = false;
+  foregroundBokeh.renderOrder = 8;
+  scene.add(foregroundBokeh);
 
   // four-point sparkles
   var sPos = [], sCol = [], sSize = [], sPhase = [], sTw = [], sDelay = [], sRot = [];
@@ -1471,13 +1673,33 @@
   starGroup.add(starGlow);
 
   var starHaloMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffd9e9, transparent: true, opacity: 0.16,
+    map: texGlow, color: 0xffd7a6, transparent: true, opacity: 0.20,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var starHalo = new THREE.Sprite(starHaloMat);
   starHalo.scale.set(5.6, 5.6, 1);
   starHalo.renderOrder = 7;
   starGroup.add(starHalo);
+
+  // a slow ring of tiny stars around the topper
+  var ringPos = [], ringCol = [], ringSize = [], ringPhase = [], ringTw = [], ringDelay = [];
+  for (var ri = 0; ri < 18; ri++) {
+    var ra = ri / 18 * TAU;
+    var rr = 1.02 + Math.random() * 0.32;
+    ringPos.push(Math.cos(ra) * rr, (Math.random() - 0.5) * 0.55, Math.sin(ra) * rr);
+    var rc = new THREE.Color(ri % 3 === 0 ? '#ffd9a8' : (ri % 3 === 1 ? '#ffc4e2' : '#d8e8ff'));
+    ringCol.push(rc.r, rc.g, rc.b);
+    ringSize.push(0.14 + Math.random() * 0.14);
+    ringPhase.push(Math.random() * TAU);
+    ringTw.push(0.9);
+    ringDelay.push(Math.random() * 0.4);
+  }
+  var starRing = makePoints(ringPos, ringCol, ringSize, ringPhase, ringTw, ringDelay, makeTexPointMaterial(texStar, {
+    sizeScale: 1, opacity: 0.72, depthTest: false
+  }));
+  starRing.position.copy(starGroup.position);
+  starRing.renderOrder = 9;
+  scene.add(starRing);
 
   /* ---------------------------------------------------------------- *
    *  Moon, mist, butterflies, cat, signature
@@ -1521,7 +1743,7 @@
 
   var butterflies = [];
   var butterflyColors = [0xffd3e8, 0xe7d4ff, 0xfff0d6, 0xd6e8ff, 0xffc9e2];
-  for (var bfi = 0; bfi < 7; bfi++) {
+  for (var bfi = 0; bfi < 9; bfi++) {
     var bm = new THREE.SpriteMaterial({
       map: texButterfly,
       color: butterflyColors[bfi % butterflyColors.length],
@@ -1533,7 +1755,7 @@
     var ba = Math.random() * TAU;
     var by = -1.4 + Math.random() * 6.4;
     bs.position.set(Math.cos(ba) * br, by, Math.sin(ba) * br);
-    var bscale = 0.40 + Math.random() * 0.40;
+    var bscale = 0.48 + Math.random() * 0.42;
     bs.scale.set(bscale, bscale, 1);
     bs.renderOrder = 6;
     scene.add(bs);
@@ -1765,7 +1987,7 @@
       '  vec3 bloom = texture2D(tBloom, uv).rgb;',
       '  col = col * (1.0 - sceneA) + sceneCol;',
       '  col += bloom * 0.95;',
-      '  col = vec3(1.0) - exp(-col * 1.42);',
+      '  col = vec3(1.0) - exp(-col * 1.24);',
       '  float lowWash = smoothstep(0.66, 0.04, uv.y);',
       '  col = mix(col, col * vec3(1.10, 0.80, 0.93), lowWash * 0.34);',
       '  float highWash = smoothstep(0.46, 0.96, uv.y);',
@@ -2004,6 +2226,7 @@
     var pulse = 1 + Math.sin(elapsed * 1.1) * 0.035;
     starMesh.scale.set(pulse, pulse, 1);
     starMesh.lookAt(camera.position);
+    starRing.rotation.y = elapsed * 0.13;
     starMesh.rotateZ(Math.sin(elapsed * 0.22) * 0.03);
     starGlowMat.opacity = 0.58 + Math.sin(elapsed * 0.9) * 0.06;
     starGlowMat.rotation = elapsed * 0.035;
@@ -2041,8 +2264,17 @@
       bf.sprite.scale.set(bf.base * flap, bf.base, 1);
       var appear = Math.max(0, Math.min(1, (elapsed - bf.delay) / 1.2));
       var side = 0.7 + 0.3 * Math.cos(bf.angle - spherical.theta);
-      bf.mat.opacity = appear * 0.62 * side;
+      bf.mat.opacity = appear * 0.76 * side;
       bf.mat.rotation = Math.sin(elapsed * 0.4 + bf.phase) * 0.12;
+    }
+
+    // slow aurora drift
+    auroraCurtainMat.opacity = 0.38 + 0.06 * Math.sin(elapsed * 0.09);
+    auroraCurtainMat.rotation = -0.04 + 0.025 * Math.sin(elapsed * 0.05 + 1.2);
+    for (var aui = 0; aui < auroraSprites.length; aui++) {
+      var au = auroraSprites[aui];
+      au.mat.rotation = au.base + Math.sin(elapsed * 0.055 + au.phase) * 0.07;
+      au.mat.opacity = au.baseO * (0.86 + 0.14 * Math.sin(elapsed * 0.13 + au.phase));
     }
 
     // cat + signature: anchored to the camera so the dedication never rotates away
