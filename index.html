@@ -246,8 +246,131 @@
     }
   });
 
-  var texSnow = makeTexture(64, function (ctx, s) {
-    var g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  var texBough = makeTexture(256, function (ctx, s) {
+    var W = s, H = 128, cy = H * 0.5;
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineCap = 'round';
+    ctx.globalCompositeOperation = 'lighter';
+
+    // central twig
+    ctx.strokeStyle = 'rgba(255,238,250,.50)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(6, cy);
+    ctx.bezierCurveTo(W * 0.33, cy - 4, W * 0.66, cy + 5, W - 6, cy - 2);
+    ctx.stroke();
+
+    // needles fanning off the twig
+    for (var bi = 0; bi < 170; bi++) {
+      var bt = Math.random();
+      var bx = 7 + bt * (W - 14);
+      var spread = Math.pow(Math.sin(Math.PI * bt), 0.55);
+      var by = cy + (Math.random() - 0.5) * 9 * spread;
+      var bang = (Math.random() - 0.5) * 1.45;
+      var blen = (7 + Math.random() * 30) * (0.30 + 0.70 * spread);
+      var roll = Math.random();
+      var col = roll < 0.46 ? '255,248,255' : (roll < 0.76 ? '255,196,232' : (roll < 0.92 ? '214,190,255' : '186,255,235'));
+      ctx.strokeStyle = 'rgba(' + col + ',' + (0.11 + Math.random() * 0.21) + ')';
+      ctx.lineWidth = 0.7 + Math.random() * 1.1;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + Math.cos(bang) * blen, by + Math.sin(bang) * blen);
+      ctx.stroke();
+      if (Math.random() < 0.35) {
+        ctx.fillStyle = 'rgba(' + col + ',' + (0.20 + Math.random() * 0.28) + ')';
+        ctx.beginPath();
+        ctx.arc(bx + Math.cos(bang) * blen, by + Math.sin(bang) * blen, 0.8 + Math.random() * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // soft halo along the bough
+    ctx.shadowColor = 'rgba(255,205,240,.55)';
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = 'rgba(255,240,252,.14)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(10, cy);
+    ctx.bezierCurveTo(W * 0.33, cy - 3, W * 0.66, cy + 4, W - 10, cy - 1);
+    ctx.stroke();
+
+    // inner end falls into shade, tips stay bright: reads as depth inside the tree
+    var shade = ctx.createLinearGradient(0, 0, W, 0);
+    shade.addColorStop(0, 'rgba(54,20,56,.20)');
+    shade.addColorStop(0.38, 'rgba(54,20,56,.07)');
+    shade.addColorStop(0.72, 'rgba(54,20,56,.015)');
+    shade.addColorStop(1, 'rgba(54,20,56,0)');
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, W, H);
+  }, 128);
+
+  // painted tree body: a dark layered silhouette covered with needle boughs
+  var bodyCanvas = document.createElement('canvas');
+  bodyCanvas.width = 1024; bodyCanvas.height = 1024;
+  var bctx = bodyCanvas.getContext('2d');
+  var BCX = 512, BTOP = 84, BBASE = 952, BMAX = 388;
+
+  bctx.clearRect(0, 0, 1024, 1024);
+  var bodyGrad = bctx.createLinearGradient(0, BTOP, 0, BBASE);
+  bodyGrad.addColorStop(0, 'rgba(228,216,250,.86)');
+  bodyGrad.addColorStop(0.55, 'rgba(216,187,228,.88)');
+  bodyGrad.addColorStop(1, 'rgba(198,160,206,.90)');
+  bctx.fillStyle = bodyGrad;
+  for (var bei = 0; bei < 26; bei++) {
+    var bet = bei / 25;
+    var bey = BTOP + (BBASE - BTOP) * bet;
+    var bew = 26 + BMAX * Math.pow(bet, 0.92);
+    var bery = 46 + 28 * bet;
+    bctx.beginPath();
+    bctx.ellipse(BCX + (Math.random() - 0.5) * 10, bey + (Math.random() - 0.5) * 8, bew, bery, 0, 0, Math.PI * 2);
+    bctx.fill();
+  }
+
+  bctx.fillStyle = 'rgba(38,16,44,.82)';
+  for (var bsi = 0; bsi < 16; bsi++) {
+    var bst = bsi / 15;
+    var bsy = BTOP + (BBASE - BTOP) * bst;
+    var bsw = 28 + BMAX * Math.pow(bst, 0.92);
+    bctx.beginPath();
+    bctx.moveTo(BCX - bsw, bsy);
+    bctx.quadraticCurveTo(BCX, bsy + 64 + 24 * bst, BCX + bsw, bsy);
+    bctx.quadraticCurveTo(BCX, bsy + 22, BCX - bsw, bsy);
+    bctx.fill();
+  }
+  bctx.fillStyle = 'rgba(32,13,38,.6)';
+  bctx.fillRect(BCX - 11, BTOP + 50, 22, BBASE - BTOP - 30);
+
+  function stampBough(bx, by, bscale, brot, bflip, balpha) {
+    bctx.save();
+    bctx.translate(bx, by);
+    bctx.rotate(brot);
+    bctx.scale(bflip ? -bscale : bscale, bscale);
+    bctx.globalAlpha = balpha;
+    bctx.drawImage(texBough.image, -128, -64, 256, 128);
+    bctx.restore();
+  }
+
+  for (var bti = 0; bti < 14; bti++) {
+    var btt = bti / 13;
+    var bty = BTOP + (BBASE - BTOP) * btt;
+    var btw = 24 + BMAX * Math.pow(btt, 0.92);
+    for (var bside = -1; bside <= 1; bside += 2) {
+      for (var bkk = 0; bkk < 8; bkk++) {
+        var bkx = BCX + bside * btw * (0.12 + bkk * 0.13) + (Math.random() - 0.5) * 16;
+        var bky = bty + 4 + bkk * 4 + (Math.random() - 0.5) * 10;
+        var bks = 0.55 + 0.34 * (1 - btt) + Math.random() * 0.14;
+        var bkr = bside * (0.05 + Math.random() * 0.13) + (Math.random() - 0.5) * 0.08;
+        stampBough(bkx, bky, bks, bkr, bside < 0, 0.58 + Math.random() * 0.24);
+      }
+    }
+  }
+
+  var texTreeBody = new THREE.CanvasTexture(bodyCanvas);
+  texTreeBody.minFilter = THREE.LinearFilter;
+  texTreeBody.magFilter = THREE.LinearFilter;
+
+  var texSnow = makeTexture(64, function (ctx, s) {    var g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
     g.addColorStop(0, 'rgba(255,255,255,1)');
     g.addColorStop(0.35, 'rgba(255,255,255,.7)');
     g.addColorStop(0.7, 'rgba(255,255,255,.12)');
@@ -648,38 +771,190 @@
   var BRANCHES = 0;
   var zAxis = new THREE.Vector3();
 
+  // real branch skeleton, so the inside reads as wood and needles rather than mist
+  var segPos = [], segW = [], segCol = [];
+  var bcPos = [], bcCol = [], bcSize = [], bcPhase = [], bcTw = [], bcDelay = [];
+  var bgPos = [], bgCol = [], bgSize = [], bgPhase = [], bgTw = [], bgDelay = [], bgRot = [];
+  function addSeg(ax, ay, az, bx, by, bz, w, col) {
+    segPos.push(ax, ay, az, bx, by, bz);
+    segW.push(w);
+    segCol.push(col.r, col.g, col.b);
+  }
+
   for (var ti = 0; ti < TIERS; ti++) {
     var t = ti / (TIERS - 1);
     var yb = tierY(t);
     var baseR = tierRadius(t);
-    var nBranch = Math.round(25 + 13 * (1 - t));
+    var nBranch = Math.round(34 + 20 * (1 - t));
     BRANCHES += nBranch;
     for (var bi = 0; bi < nBranch; bi++) {
-      var angle = (bi / nBranch) * TAU + ti * 0.63 + (Math.random() - 0.5) * 0.5;
-      var len = baseR * (0.78 + Math.random() * 0.3);
+      var angle = (bi / nBranch) * TAU + ti * 0.63 + (Math.random() - 0.5) * 0.36;
+      var len = baseR * (0.82 + Math.random() * 0.24);
       if (ti === TIERS - 1) len *= 0.65;
-      var droop = (0.12 + Math.random() * 0.24) * (len / MAX_R) * 1.3;
-      var twist = (Math.random() - 0.5) * 0.9;
-      var count = 34 + Math.round(Math.random() * 10);
+      var droop = (0.16 + Math.random() * 0.24) * (len / MAX_R) * 1.35;
+      var twist = (Math.random() - 0.5) * 0.7;
+      var count = 32 + Math.round(Math.random() * 7);
       var branchTone = pickColor(new THREE.Color(), false, t);
-      branchTone.offsetHSL(0, 0.14, -0.06);
+      branchTone.offsetHSL(0, 0.15, -0.07);
+
       for (var j = 0; j < count; j++) {
-        var s = 0.05 + 0.95 * Math.pow(j / count, 0.92);
-        var r = 0.10 + len * Math.pow(s, 1.06);
-        var a = angle + twist * s + (Math.random() - 0.5) * 0.14;
-        var y = yb - droop * Math.pow(s, 1.55) + (Math.random() - 0.5) * (0.07 + 0.16 * s);
-        var x = Math.cos(a) * r + (Math.random() - 0.5) * 0.07;
-        var z = Math.sin(a) * r + (Math.random() - 0.5) * 0.07;
+        var s = 0.05 + 0.95 * Math.pow(j / count, 0.9);
+        var r = 0.10 + len * Math.pow(s, 1.04);
+        var a = angle + twist * s + (Math.random() - 0.5) * 0.10;
+        var y = yb - droop * Math.pow(s, 1.5) + (Math.random() - 0.5) * (0.06 + 0.12 * s);
+        var x = Math.cos(a) * r + (Math.random() - 0.5) * 0.05;
+        var z = Math.sin(a) * r + (Math.random() - 0.5) * 0.05;
         tmpColor.copy(branchTone);
         if (Math.random() < 0.24) tmpColor.lerp(whiteCol, 0.28 + Math.random() * 0.3);
         tmpColor.offsetHSL((Math.random() - 0.5) * 0.012, (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.05);
-        var size = (0.05 + Math.random() * 0.095) * (1.32 - t * 0.35) * (0.8 + s * 0.65);
+        var size = (0.055 + Math.random() * 0.085) * (1.32 - t * 0.35) * (0.8 + s * 0.65);
         var tw = Math.random() < 0.16 ? 0.9 : 0.15;
         var delay = 0.06 + Math.max(0, (y - BASE_Y) / TREE_H) * 0.55 + Math.random() * 0.18;
         pushPoint(x, y, z, tmpColor, size, tw, delay);
+
+        // side needles make each bough read as foliage, not a single thread
+        if (j > 2) {
+          var nq = j % 4 === 0 ? 2 : 1;
+          for (var q = 0; q < nq; q++) {
+            var na = a + (Math.random() - 0.5) * 0.62;
+            var nr = Math.max(0.04, r + (Math.random() - 0.5) * 0.28);
+            var ny = y + (Math.random() - 0.5) * (0.14 + 0.20 * s);
+            tmpColor.copy(branchTone);
+            tmpColor.lerp(whiteCol, Math.random() * 0.25);
+            tmpColor.offsetHSL(0, 0.02, (Math.random() - 0.5) * 0.06);
+            pushPoint(Math.cos(na) * nr, ny, Math.sin(na) * nr, tmpColor, size * (0.58 + Math.random() * 0.22), tw, delay);
+          }
+        }
+      }
+
+      // a soft tuft hides the bare tip of the branch cylinder
+      var tipR = 0.10 + len;
+      var tipY = yb - droop;
+      for (var tc = 0; tc < 6; tc++) {
+        var tra = angle + (Math.random() - 0.5) * 0.34;
+        var trr = tipR + (Math.random() - 0.5) * 0.22;
+        var tryy = tipY + (Math.random() - 0.5) * 0.24;
+        tmpColor.copy(branchTone).lerp(whiteCol, 0.25 + Math.random() * 0.3);
+        pushPoint(Math.cos(tra) * trr, tryy, Math.sin(tra) * trr, tmpColor, 0.11 + Math.random() * 0.09, 0.2, delay);
+      }
+
+      // soft cotton boughs along each branch, so the volume is never see-through
+      for (var bc = 0; bc < 5; bc++) {
+        var bs = 0.18 + 0.78 * (bc / 4) + (Math.random() - 0.5) * 0.08;
+        var br = 0.10 + len * Math.pow(bs, 1.04);
+        var ba = angle + twist * bs + (Math.random() - 0.5) * 0.10;
+        var by = yb - droop * Math.pow(bs, 1.5) + (Math.random() - 0.5) * 0.26;
+        pickColor(tmpColor, false, t);
+        tmpColor.offsetHSL(0, 0.06, -0.05);
+        bcPos.push(Math.cos(ba) * br, by, Math.sin(ba) * br);
+        bcCol.push(tmpColor.r, tmpColor.g, tmpColor.b);
+        bcSize.push(0.34 + Math.random() * 0.38);
+        bcPhase.push(Math.random() * TAU);
+        bcTw.push(0.18);
+        bcDelay.push(0.08 + Math.max(0, (by - BASE_Y) / TREE_H) * 0.5 + Math.random() * 0.18);
+      }
+
+      // three painted bough cards per branch, kept near horizontal like real tiers
+      for (var bgc = 0; bgc < 3; bgc++) {
+        var bgs = 0.28 + bgc * 0.24 + Math.random() * 0.06;
+        var bgr = 0.10 + len * Math.pow(bgs, 1.04);
+        var bga = angle + twist * bgs;
+        var bgy = yb - droop * Math.pow(bgs, 1.5);
+        pickColor(tmpColor, false, t);
+        if (Math.random() < 0.42) {
+          var bhue = t < 0.34 ? 0.56 : (t < 0.70 ? 0.78 : 0.91);
+          tmpColor.setHSL(bhue + (Math.random() - 0.5) * 0.05, 0.50, 0.70);
+        } else {
+          tmpColor.offsetHSL(0, 0.18, -0.09);
+        }
+        bgPos.push(Math.cos(bga) * bgr, bgy, Math.sin(bga) * bgr);
+        bgCol.push(tmpColor.r, tmpColor.g, tmpColor.b);
+        bgSize.push((1.15 + Math.random() * 0.35) * (0.64 + 0.36 * (1 - t)));
+        bgPhase.push(Math.random() * TAU);
+        bgTw.push(0.16);
+        bgDelay.push(0.06 + Math.max(0, (bgy - BASE_Y) / TREE_H) * 0.52 + Math.random() * 0.16);
+        bgRot.push((Math.random() - 0.5) * 0.22);
+      }
+
+      // a small shadowed card near the trunk fills the innermost hollow
+      var igs = 0.12 + Math.random() * 0.06;
+      var igr = 0.10 + len * Math.pow(igs, 1.04);
+      var iga = angle + twist * igs;
+      var igy = yb - droop * Math.pow(igs, 1.5);
+      pickColor(tmpColor, false, t);
+      tmpColor.offsetHSL(0, 0.14, -0.18);
+      bgPos.push(Math.cos(iga) * igr, igy, Math.sin(iga) * igr);
+      bgCol.push(tmpColor.r, tmpColor.g, tmpColor.b);
+      bgSize.push((0.78 + Math.random() * 0.24) * (0.70 + 0.30 * (1 - t)));
+      bgPhase.push(Math.random() * TAU);
+      bgTw.push(0.14);
+      bgDelay.push(0.06 + Math.max(0, (igy - BASE_Y) / TREE_H) * 0.52 + Math.random() * 0.16);
+      bgRot.push((Math.random() - 0.5) * 0.44);
+
+      // two small forked branchlets per bough
+      for (var fk = 0; fk < 2; fk++) {
+        var fs0 = 0.30 + fk * 0.26 + Math.random() * 0.09;
+        var forkR = 0.10 + len * Math.pow(fs0, 1.04);
+        var forkY = yb - droop * Math.pow(fs0, 1.5);
+        var forkA = angle + twist * fs0 + (fk === 0 ? 1 : -1) * (0.34 + Math.random() * 0.34);
+        var forkLen = Math.min(Math.max(0.15, baseR * 1.02 - forkR), len * (0.20 + Math.random() * 0.16));
+        for (var fm = 0; fm < 6; fm++) {
+          var fss = fm / 5;
+          var fr = forkR + forkLen * fss;
+          var fy = forkY - 0.10 * fss + (Math.random() - 0.5) * 0.07;
+          var fa = forkA + (Math.random() - 0.5) * 0.10;
+          tmpColor.copy(branchTone);
+          if (Math.random() < 0.3) tmpColor.lerp(whiteCol, 0.2 + Math.random() * 0.3);
+          tmpColor.offsetHSL(0, 0.02, (Math.random() - 0.5) * 0.06);
+          pushPoint(Math.cos(fa) * fr, fy, Math.sin(fa) * fr, tmpColor, size * (0.55 + Math.random() * 0.25), tw, delay);
+        }
+        var forkCol = branchTone.clone().offsetHSL(0, 0.02, -0.24);
+      }
+
+      // three short segments make the inner bough; tips stay soft
+      var segColBase = branchTone.clone().offsetHSL(0, 0.03, -0.30);
+      for (var sm = 0; sm < 3; sm++) {
+        var s0 = (sm / 3) * 0.55, s1 = ((sm + 1) / 3) * 0.55;
+        var r0 = 0.10 + len * Math.pow(s0, 1.04);
+        var r1 = 0.10 + len * Math.pow(s1, 1.04);
+        var a0 = angle + twist * s0;
+        var a1 = angle + twist * s1;
+        var y0 = yb - droop * Math.pow(s0, 1.5);
+        var y1 = yb - droop * Math.pow(s1, 1.5);
+        addSeg(Math.cos(a0) * r0, y0, Math.sin(a0) * r0,
+          Math.cos(a1) * r1, y1, Math.sin(a1) * r1,
+          0.022 - sm * 0.004, segColBase);
       }
     }
   }
+
+  // trunk and branch cylinders, one instanced draw call
+  var cylGeo = new THREE.CylinderGeometry(0.36, 0.5, 1, 5, 1, false);
+  var cylMat = new THREE.MeshBasicMaterial({ color: 0x3c2438 });
+  var branchMesh = new THREE.InstancedMesh(cylGeo, cylMat, segW.length);
+  var dummy = new THREE.Object3D();
+  var upVec = new THREE.Vector3(0, 1, 0);
+  var dirVec = new THREE.Vector3();
+  var aVec = new THREE.Vector3();
+  var bVec = new THREE.Vector3();
+  var midVec = new THREE.Vector3();
+  for (var si = 0; si < segW.length; si++) {
+    aVec.set(segPos[si * 6], segPos[si * 6 + 1], segPos[si * 6 + 2]);
+    bVec.set(segPos[si * 6 + 3], segPos[si * 6 + 4], segPos[si * 6 + 5]);
+    dirVec.subVectors(bVec, aVec);
+    var segLen = Math.max(0.001, dirVec.length());
+    midVec.addVectors(aVec, bVec).multiplyScalar(0.5);
+    dummy.position.copy(midVec);
+    dummy.quaternion.setFromUnitVectors(upVec, dirVec.normalize());
+    dummy.scale.set(segW[si], segLen, segW[si]);
+    dummy.updateMatrix();
+    branchMesh.setMatrixAt(si, dummy.matrix);
+  }
+  branchMesh.instanceMatrix.needsUpdate = true;
+  branchMesh.visible = false;
+  scene.add(branchMesh);
+
+  // (body cone removed: a smooth surface reads as a lampshade, not foliage)
 
   // airy cone fill / needles, gathered into soft horizontal boughs
   for (var k = 0; k < 5200; k++) {
@@ -695,7 +970,7 @@
     pushPoint(Math.cos(aa) * rr, yy, Math.sin(aa) * rr, tmpColor, ss, Math.random() < 0.12 ? 0.85 : 0.1, dd);
   }
 
-  function makePoints(posArr, colArr, sizeArr, phaseArr, twArr, delayArr, material) {
+  function makePoints(posArr, colArr, sizeArr, phaseArr, twArr, delayArr, material, rotArr) {
     var g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
     g.setAttribute('aColor', new THREE.Float32BufferAttribute(colArr, 3));
@@ -703,14 +978,84 @@
     g.setAttribute('aPhase', new THREE.Float32BufferAttribute(phaseArr, 1));
     g.setAttribute('aTwinkle', new THREE.Float32BufferAttribute(twArr, 1));
     g.setAttribute('aDelay', new THREE.Float32BufferAttribute(delayArr, 1));
+    if (rotArr) g.setAttribute('aRot', new THREE.Float32BufferAttribute(rotArr, 1));
     var p = new THREE.Points(g, material);
     p.frustumCulled = false;
     return p;
   }
 
-  var treeMat = makePointMaterial({ sizeScale: 1.0, opacity: 0.92, sway: 0.012 });
+  // an inner, darker tree: fills the hollow centre with real boughs
+  var inPos = [], inCol = [], inSize = [], inPhase = [], inTw = [], inDelay = [];
+  function pushInner(x, y, z, col, size, tw, delay) {
+    inPos.push(x, y, z);
+    inCol.push(col.r, col.g, col.b);
+    inSize.push(size);
+    inPhase.push(Math.random() * TAU);
+    inTw.push(tw);
+    inDelay.push(delay);
+  }
+  var INNER_TIERS = 11;
+  for (var iti = 0; iti < INNER_TIERS; iti++) {
+    var it = iti / (INNER_TIERS - 1);
+    var iyb = tierY(it);
+    var ibase = tierRadius(it) * 0.66;
+    var inBranch = Math.round(20 + 12 * (1 - it));
+    for (var ibi = 0; ibi < inBranch; ibi++) {
+      var ia = (ibi / inBranch) * TAU + iti * 0.81 + (Math.random() - 0.5) * 0.3;
+      var ilen = ibase * (0.82 + Math.random() * 0.22);
+      var idroop = (0.14 + Math.random() * 0.22) * (ilen / MAX_R) * 1.3;
+      var icount = 15 + Math.round(Math.random() * 4);
+      var icol = pickColor(new THREE.Color(), false, it);
+      icol.offsetHSL(0, 0.08, -0.14);
+      for (var ij = 0; ij < icount; ij++) {
+        var is = 0.05 + 0.95 * Math.pow(ij / icount, 0.92);
+        var ir = 0.06 + ilen * Math.pow(is, 1.04);
+        var iaa = ia + (Math.random() - 0.5) * 0.13;
+        var iyy = iyb - idroop * Math.pow(is, 1.5) + (Math.random() - 0.5) * (0.06 + 0.12 * is);
+        var ix = Math.cos(iaa) * ir;
+        var iz = Math.sin(iaa) * ir;
+        tmpColor.copy(icol);
+        if (Math.random() < 0.2) tmpColor.lerp(whiteCol, 0.18 + Math.random() * 0.22);
+        var isz = (0.05 + Math.random() * 0.075) * (1.25 - it * 0.3);
+        var idl = 0.06 + Math.max(0, (iyy - BASE_Y) / TREE_H) * 0.55 + Math.random() * 0.18;
+        pushInner(ix, iyy, iz, tmpColor, isz, Math.random() < 0.12 ? 0.8 : 0.12, idl);
+
+        if (ij > 2 && ij % 3 === 0) {
+          var ina = iaa + (Math.random() - 0.5) * 0.46;
+          var inr = Math.max(0.04, ir + (Math.random() - 0.5) * 0.20);
+          var iny = iyy + (Math.random() - 0.5) * 0.18;
+          tmpColor.copy(icol);
+          tmpColor.lerp(whiteCol, Math.random() * 0.2);
+          pushInner(Math.cos(ina) * inr, iny, Math.sin(ina) * inr, tmpColor, isz * 0.75, 0.12, idl);
+        }
+      }
+    }
+  }
+  var innerMat = makePointMaterial({ sizeScale: 0.82, opacity: 0.32, sway: 0.008 });
+  var inner = makePoints(inPos, inCol, inSize, inPhase, inTw, inDelay, innerMat);
+  inner.renderOrder = 1;
+  scene.add(inner);
+
+  var treeMat = makePointMaterial({ sizeScale: 0.95, opacity: 0.62, sway: 0.012 });
   var tree = makePoints(positions, colors, sizes, phases, twinkles, delays, treeMat);
+  tree.renderOrder = 2;
   scene.add(tree);
+
+  var bough = makePoints(bcPos, bcCol, bcSize, bcPhase, bcTw, bcDelay, makeTexPointMaterial(texCloud, {
+    sizeScale: 1, opacity: 0.18, blending: THREE.NormalBlending
+  }));
+  bough.renderOrder = 0;
+  bough.visible = false;
+  scene.add(bough);
+
+  var boughCards = makePoints(bgPos, bgCol, bgSize, bgPhase, bgTw, bgDelay, makeTexPointMaterial(texBough, {
+    sizeScale: 1, opacity: 0.46, blending: THREE.NormalBlending
+  }), bgRot);
+  boughCards.renderOrder = 0;
+  boughCards.visible = true;
+  scene.add(boughCards);
+
+  // body textures are kept for future variants but the tree uses bough cards
 
   // fluffy bokeh around branch tips
   var fPos = [], fCol = [], fSize = [], fPhase = [], fTw = [], fDelay = [];
@@ -1247,10 +1592,11 @@
       '  float grain = hash21(uv * uRes) - 0.5;',
       '  col += grain * 0.018;',
       '  vec3 sceneCol = texture2D(tScene, uv).rgb;',
+      '  float sceneA = texture2D(tScene, uv).a;',
       '  vec3 bloom = texture2D(tBloom, uv).rgb;',
-      '  col += sceneCol;',
-      '  col += bloom * 1.12;',
-      '  col = vec3(1.0) - exp(-col * 1.58);',
+      '  col = col * (1.0 - sceneA) + sceneCol;',
+      '  col += bloom * 0.95;',
+      '  col = vec3(1.0) - exp(-col * 1.42);',
       '  float lowWash = smoothstep(0.66, 0.04, uv.y);',
       '  col = mix(col, col * vec3(1.10, 0.80, 0.93), lowWash * 0.34);',
       '  float highWash = smoothstep(0.46, 0.96, uv.y);',
