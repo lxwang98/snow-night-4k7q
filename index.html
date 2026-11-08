@@ -191,17 +191,17 @@
   renderer.autoClear = true;
 
   var scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0x9fc8ff, 0x02040a, 0.42));
+  scene.add(new THREE.HemisphereLight(0x9fc8ff, 0x02040a, 0.24));
 
-  var keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
+  var keyLight = new THREE.DirectionalLight(0xffffff, 0.55);
   keyLight.position.set(5.5, 9.0, 7.5);
   scene.add(keyLight);
 
-  var rimLight = new THREE.DirectionalLight(0x4f9fff, 1.05);
+  var rimLight = new THREE.DirectionalLight(0x4f9fff, 0.55);
   rimLight.position.set(-6.0, 3.2, -5.0);
   scene.add(rimLight);
 
-  var coolLight = new THREE.PointLight(0x6fd4ff, 0.72, 26);
+  var coolLight = new THREE.PointLight(0x6fd4ff, 0.40, 26);
   coolLight.position.set(4.2, 4.8, -2.5);
   scene.add(coolLight);
 
@@ -514,9 +514,9 @@
     grad.addColorStop(1, 'rgba(110,185,255,.72)');
     ctx.fillStyle = grad;
     ctx.beginPath();
-    for (var vi2 = 0; vi2 < 10; vi2++) {
-      var va2 = -Math.PI / 2 + vi2 * Math.PI / 5;
-      var vr2 = vi2 % 2 === 0 ? s * 0.43 : s * 0.17;
+    for (var vi2 = 0; vi2 < 12; vi2++) {
+      var va2 = -Math.PI / 2 + vi2 * Math.PI / 6;
+      var vr2 = vi2 % 2 === 0 ? s * 0.43 : s * 0.15;
       if (vi2 === 0) ctx.moveTo(Math.cos(va2) * vr2, Math.sin(va2) * vr2);
       else ctx.lineTo(Math.cos(va2) * vr2, Math.sin(va2) * vr2);
     }
@@ -1215,11 +1215,16 @@
 
   // tapered trunk, visible through the branches
   var trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.055, 0.23, TREE_H * 0.98, 8, 1),
-    new THREE.MeshLambertMaterial({ color: 0x24384a })
+    new THREE.CylinderGeometry(0.012, 0.038, TREE_H * 0.98, 7, 1),
+    new THREE.MeshLambertMaterial({ color: 0x0d1b22 })
   );
-  trunk.position.y = BASE_Y + TREE_H * 0.49;
-  solidTree.add(trunk);
+  trunk.visible = false;
+  var topStem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.016, 0.030, 1.25, 6, 1),
+    new THREE.MeshLambertMaterial({ color: 0x12242c })
+  );
+  topStem.position.y = BASE_Y + TREE_H - 0.52;
+  solidTree.add(topStem);
 
   var branchGeo = new THREE.CylinderGeometry(1, 1, 1, 5, 1);
   var branchMat = new THREE.MeshLambertMaterial({ color: 0x1a2a3a });
@@ -1318,8 +1323,100 @@
   if (leafMesh.instanceColor) leafMesh.instanceColor.needsUpdate = true;
   solidTree.add(leafMesh);
 
+  // the old puffy clusters read like towels; replace them with real needles
+  leafMesh.visible = false;
+  boughCards.visible = false;
+
+  var needleGeo = new THREE.ConeGeometry(1, 1, 3, 1, true);
+  needleGeo.translate(0, 0.5, 0);
+  var needleMat = new THREE.MeshLambertMaterial({
+    color: 0xffffff,
+    emissive: 0x01070b,
+    emissiveIntensity: 0.24
+  });
+  var needlePos = [];
+  var needleQuat = [];
+  var needleScale = [];
+  var needleCol = [];
+  var nq = new THREE.Quaternion();
+  var nv = new THREE.Vector3();
+  var ndir = new THREE.Vector3();
+  var nrad = new THREE.Vector3();
+  var ncol = new THREE.Color();
+  for (var nb = 0; nb < branchXforms.length; nb++) {
+    var NB = branchXforms[nb];
+    var ndx = NB.x2 - NB.x1, ndy = NB.y2 - NB.y1, ndz = NB.z2 - NB.z1;
+    var ndl = Math.sqrt(ndx * ndx + ndy * ndy + ndz * ndz) || 1;
+    ndx /= ndl; ndy /= ndl; ndz /= ndl;
+    for (var nn = 0; nn < 320; nn++) {
+      var nS = 0.10 + 0.90 * Math.pow(Math.random(), 0.72);
+      var nx = NB.x1 + (NB.x2 - NB.x1) * nS + (Math.random() - 0.5) * 0.34;
+      var ny = NB.y1 + (NB.y2 - NB.y1) * nS + (Math.random() - 0.5) * 0.36;
+      var nz = NB.z1 + (NB.z2 - NB.z1) * nS + (Math.random() - 0.5) * 0.34;
+      nrad.set(nx, 0, nz);
+      if (nrad.lengthSq() < 0.001) nrad.set(Math.cos(nb), 0, Math.sin(nb));
+      nrad.normalize();
+      ndir.set(
+        nrad.x * (0.55 + Math.random() * 0.45) + ndx * 0.34 + (Math.random() - 0.5) * 0.42,
+        ndy * 0.28 - 0.14 - Math.random() * 0.26 + (Math.random() - 0.5) * 0.2,
+        nrad.z * (0.55 + Math.random() * 0.45) + ndz * 0.34 + (Math.random() - 0.5) * 0.42
+      ).normalize();
+      var nlen = (0.11 + Math.random() * 0.20) * (0.72 + 0.38 * nS);
+      var nwid = 0.013 + Math.random() * 0.009;
+      nq.setFromUnitVectors(upAxis, ndir);
+      needlePos.push(nx, ny, nz);
+      needleQuat.push(nq.x, nq.y, nq.z, nq.w);
+      needleScale.push(nwid, nlen, nwid);
+      ncol.setHSL(0.47 + Math.random() * 0.04, 0.24 + Math.random() * 0.10, 0.11 + Math.random() * 0.08);
+      if (Math.random() < 0.09) ncol.setRGB(0.62, 0.80, 0.86);
+      needleCol.push(ncol.r, ncol.g, ncol.b);
+    }
+  }
+  // short interior needles bridge the gaps between branch whorls
+  for (var fti = 0; fti < 16; fti++) {
+    var ftt = fti / 15;
+    for (var fnj = 0; fnj < 120; fnj++) {
+      var fna = Math.random() * TAU;
+      var fnr = tierRadius(ftt) * (0.24 + Math.random() * 0.64);
+      var fny = tierY(ftt) + (Math.random() - 0.5) * 0.62;
+      ndir.set(
+        Math.cos(fna) * (0.55 + Math.random() * 0.55),
+        -0.15 - Math.random() * 0.34,
+        Math.sin(fna) * (0.55 + Math.random() * 0.55)
+      ).normalize();
+      var fnlen = 0.10 + Math.random() * 0.16;
+      var fnwid = 0.011 + Math.random() * 0.007;
+      nq.setFromUnitVectors(upAxis, ndir);
+      needlePos.push(Math.cos(fna) * fnr, fny, Math.sin(fna) * fnr);
+      needleQuat.push(nq.x, nq.y, nq.z, nq.w);
+      needleScale.push(fnwid, fnlen, fnwid);
+      ncol.setHSL(0.48 + Math.random() * 0.04, 0.24, 0.08 + Math.random() * 0.06);
+      needleCol.push(ncol.r, ncol.g, ncol.b);
+    }
+  }
+
+  var needleMesh = new THREE.InstancedMesh(needleGeo, needleMat, needlePos.length / 3);
+  needleMesh.frustumCulled = false;
+  var nm4 = new THREE.Matrix4();
+  var nq2 = new THREE.Quaternion();
+  var np = new THREE.Vector3();
+  var ns2 = new THREE.Vector3();
+  var nc = new THREE.Color();
+  for (var ni = 0; ni < needlePos.length / 3; ni++) {
+    np.set(needlePos[ni * 3], needlePos[ni * 3 + 1], needlePos[ni * 3 + 2]);
+    nq2.set(needleQuat[ni * 4], needleQuat[ni * 4 + 1], needleQuat[ni * 4 + 2], needleQuat[ni * 4 + 3]);
+    ns2.set(needleScale[ni * 3], needleScale[ni * 3 + 1], needleScale[ni * 3 + 2]);
+    nm4.compose(np, nq2, ns2);
+    needleMesh.setMatrixAt(ni, nm4);
+    nc.setRGB(needleCol[ni * 3], needleCol[ni * 3 + 1], needleCol[ni * 3 + 2]);
+    needleMesh.setColorAt(ni, nc);
+  }
+  needleMesh.instanceMatrix.needsUpdate = true;
+  if (needleMesh.instanceColor) needleMesh.instanceColor.needsUpdate = true;
+  solidTree.add(needleMesh);
+
   // the solid core replaces the particle mist as the tree body
-  boughCards.visible = true;
+  boughCards.visible = false;
   coreCloud.visible = false;
   bough.visible = false;
   cloudMass.visible = false;
@@ -1331,7 +1428,7 @@
 
   // inner glow behind the tree
   var treeHaloMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0x9fd4ff, transparent: true, opacity: 0.20,
+    map: texGlow, color: 0x9fd4ff, transparent: true, opacity: 0.12,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var treeHalo = new THREE.Sprite(treeHaloMat);
@@ -1341,7 +1438,7 @@
   scene.add(treeHalo);
 
   var groundGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: texGlow, color: 0x8fd4ff, transparent: true, opacity: 0.38,
+    map: texGlow, color: 0x8fd4ff, transparent: true, opacity: 0.22,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   }));
   groundGlow.position.set(0, -3.55, -0.6);
@@ -1424,9 +1521,45 @@
     gTw.push(0.95);
     gDelay.push(0.15 + gt * 0.5 + Math.random() * 0.12);
   }
-  var garland = makePoints(gPos, gCol, gSize, gPhase, gTw, gDelay, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.90, depthTest: false, blending: THREE.NormalBlending }));
+  var garland = makePoints(gPos, gCol, gSize, gPhase, gTw, gDelay, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.28, depthTest: false, blending: THREE.NormalBlending }));
   garland.renderOrder = 6;
   scene.add(garland);
+
+  // continuous rope light, wrapped around the tree like the reference photo
+  var ropePts = [];
+  for (var rpi = 0; rpi <= 520; rpi++) {
+    var rpt = 0.10 + (rpi / 520) * 0.76;
+    var rpa = rpt * TAU * 6.4;
+    var rpr = tierRadius(rpt) * (0.70 + Math.sin(rpt * 31.7) * 0.02 + Math.sin(rpt * 17.3) * 0.014);
+    ropePts.push(new THREE.Vector3(
+      Math.cos(rpa) * rpr,
+      tierY(rpt) + 0.04 + Math.sin(rpt * 23.1) * 0.10,
+      Math.sin(rpa) * rpr
+    ));
+  }
+  var ropeCurve = new THREE.CatmullRomCurve3(ropePts);
+  var rope = new THREE.Mesh(
+    new THREE.TubeGeometry(ropeCurve, 640, 0.012, 4, false),
+    new THREE.MeshBasicMaterial({ color: 0xcfeeff, transparent: true, opacity: 0.58 })
+  );
+  rope.renderOrder = 6;
+  scene.add(rope);
+
+  var ropeBulbPos = [], ropeBulbCol = [], ropeBulbSize = [], ropeBulbPhase = [], ropeBulbTw = [], ropeBulbDelay = [];
+  for (var rbi = 0; rbi < ropePts.length; rbi += 2) {
+    var rbp = ropePts[rbi];
+    ropeBulbPos.push(rbp.x, rbp.y, rbp.z);
+    ropeBulbCol.push(0.94, 0.98, 1.0);
+    ropeBulbSize.push(0.18 + Math.random() * 0.12);
+    ropeBulbPhase.push(Math.random() * TAU);
+    ropeBulbTw.push(0.85);
+    ropeBulbDelay.push(0.1 + Math.random() * 0.3);
+  }
+  var ropeBulbs = makePoints(ropeBulbPos, ropeBulbCol, ropeBulbSize, ropeBulbPhase, ropeBulbTw, ropeBulbDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.95, blending: THREE.AdditiveBlending, depthTest: false
+  }));
+  ropeBulbs.renderOrder = 7;
+  scene.add(ropeBulbs);
 
   // larger warm bulbs punctuating the garland
   var gbPos = [], gbCol = [], gbSize = [], gbPhase = [], gbTw = [], gbDelay = [];
@@ -1445,6 +1578,7 @@
   }));
   garlandBulbs.frustumCulled = false;
   garlandBulbs.renderOrder = 7;
+  garlandBulbs.visible = false;
   scene.add(garlandBulbs);
 
   // pearl ornaments
@@ -1496,6 +1630,8 @@
   }));
   bigBaubles.frustumCulled = false;
   bigBaubles.renderOrder = 7;
+  bigBaubles.visible = false;
+  ornaments.visible = false;
   scene.add(bigBaubles);
 
   // saturated fairy bulbs tucked into the boughs
@@ -1531,24 +1667,33 @@
   // scattered little star charms on the boughs
   var scPos = [], scCol = [], scSize = [], scPhase = [], scTw = [], scDelay = [];
   var charmColors = ['#ffffff', '#e8f8ff', '#bfe4ff', '#d8f4ff', '#9fd4ff'];
-  for (var sci = 0; sci < 22; sci++) {
+  for (var sci = 0; sci < 34; sci++) {
     var sct = 0.08 + Math.random() * 0.84;
     var sca = Math.random() * TAU;
-    var scr = tierRadius(sct) * (0.98 + Math.random() * 0.06);
+    var scr = tierRadius(sct) * (1.02 + Math.random() * 0.05);
     scPos.push(Math.cos(sca) * scr, tierY(sct) - 0.08 + (Math.random() - 0.5) * 0.3, Math.sin(sca) * scr);
     var scc = new THREE.Color(charmColors[Math.floor(Math.random() * charmColors.length)]);
     scCol.push(scc.r, scc.g, scc.b);
-    scSize.push(0.55 + Math.random() * 0.62);
+    scSize.push(0.78 + Math.random() * 0.72);
     scPhase.push(Math.random() * TAU);
     scTw.push(0.85);
     scDelay.push(0.2 + Math.random() * 0.5);
   }
   var starCharms = makePoints(scPos, scCol, scSize, scPhase, scTw, scDelay, makeTexPointMaterial(texStarSolid, {
-    sizeScale: 1, opacity: 0.95, depthTest: false
+    sizeScale: 1, opacity: 0.98, depthTest: false, blending: THREE.AdditiveBlending
   }));
   starCharms.frustumCulled = false;
   starCharms.renderOrder = 7;
   scene.add(starCharms);
+
+  var starGlowSize = [];
+  for (var sgi = 0; sgi < scSize.length; sgi++) starGlowSize.push(scSize[sgi] * 2.1);
+  var starGlows = makePoints(scPos, scCol, starGlowSize, scPhase, scTw, scDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.20, blending: THREE.AdditiveBlending, depthTest: false
+  }));
+  starGlows.frustumCulled = false;
+  starGlows.renderOrder = 6;
+  scene.add(starGlows);
 
   // big soft bokeh orbs drifting around the tree
   var orbPos = [], orbCol = [], orbSize = [], orbPhase = [], orbTw = [], orbDelay = [];
@@ -2013,8 +2158,8 @@
       'void main(){',
       '  vec2 uv = vUv;',
       '  vec2 p = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);',
-      '  vec3 top = vec3(0.002, 0.006, 0.020);',
-      '  vec3 bottom = vec3(0.010, 0.028, 0.058);',
+      '  vec3 top = vec3(0.0004, 0.0014, 0.0060);',
+      '  vec3 bottom = vec3(0.0018, 0.0070, 0.0200);',
       '  vec3 col = mix(bottom, top, smoothstep(0.0, 1.0, uv.y));',
       '  col += vec3(0.10, 0.20, 0.34) * exp(-length(p * vec2(0.78, 1.0) + vec2(0.0, -0.02)) * 2.1) * 0.55;',
       '  col += vec3(0.06, 0.16, 0.30) * exp(-length((uv - vec2(0.20, 0.35)) * vec2(uRes.x / uRes.y, 1.0)) * 3.6) * 0.30;',
@@ -2033,8 +2178,8 @@
       '  float sceneA = texture2D(tScene, uv).a;',
       '  vec3 bloom = texture2D(tBloom, uv).rgb;',
       '  col = col * (1.0 - sceneA) + sceneCol;',
-      '  col += bloom * 1.35;',
-      '  col = vec3(1.0) - exp(-col * 1.24);',
+      '  col += bloom * 1.20;',
+      '  col = vec3(1.0) - exp(-col * 1.20);',
       '  float lowWash = smoothstep(0.66, 0.04, uv.y);',
       '  col = mix(col, col * vec3(0.74, 0.88, 1.18), lowWash * 0.38);',
       '  float highWash = smoothstep(0.46, 0.96, uv.y);',
@@ -2390,3 +2535,4 @@
 </script>
 </body>
 </html>
+
