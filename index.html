@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0a0614">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23ffe8f4' d='M32 2l8 22 23 2-18 15 6 23-19-13-19 13 6-23L2 26l23-2z'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#030b18">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23e8f8ff' d='M32 2l8 22 23 2-18 15 6 23-19-13-19 13 6-23L2 26l23-2z'/%3E%3C/svg%3E">
 <meta name="format-detection" content="telephone=no">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<meta name="description" content="一棵会发光的雪夜圣诞树，拖动看看它。">
+<meta name="description" content="一棵缀满星光的蓝色圣诞树，拖动看看它。">
 <title>甄泽汝的圣诞树 · Merry Christmas</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="甄泽汝的圣诞树 · Merry Christmas">
-<meta property="og:description" content="一棵会发光的雪夜圣诞树，拖动看看它。">
+<meta property="og:description" content="一棵缀满星光的蓝色圣诞树，拖动看看它。">
 <meta property="og:image" content="https://lxwang98.github.io/snow-night-4k7q/cover.jpg">
 <meta property="og:image:width" content="500">
 <meta property="og:image:height" content="500">
@@ -98,7 +98,7 @@
   #loading{
     position:absolute;inset:0;z-index:20;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-    background:radial-gradient(120% 90% at 50% 46%,#1a1029 0%,#0a0614 62%,#05030b 100%);
+    background:radial-gradient(120% 90% at 50% 46%,#071326 0%,#030a15 62%,#01040a 100%);
     transition:opacity 1.2s ease,visibility 1.2s ease;
   }
   #loading.gone{opacity:0;visibility:hidden;}
@@ -142,7 +142,6 @@
     <header class="masthead">
       <div class="eyebrow">A LITTLE WISH FOR YOU</div>
       <h1>Merry Christmas</h1>
-      <div class="for">给 <b>甄泽汝</b> 的雪夜</div>
     </header>
     <div class="hint" id="hint"><span class="dot"></span>拖动旋转 · 双指缩放</div>
   </div>
@@ -192,17 +191,17 @@
   renderer.autoClear = true;
 
   var scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffe6f7, 0x24122e, 0.62));
+  scene.add(new THREE.HemisphereLight(0x9fc8ff, 0x02040a, 0.42));
 
-  var keyLight = new THREE.DirectionalLight(0xfff0fa, 0.72);
+  var keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
   keyLight.position.set(5.5, 9.0, 7.5);
   scene.add(keyLight);
 
-  var rimLight = new THREE.DirectionalLight(0xff8fc8, 0.82);
+  var rimLight = new THREE.DirectionalLight(0x4f9fff, 1.05);
   rimLight.position.set(-6.0, 3.2, -5.0);
   scene.add(rimLight);
 
-  var coolLight = new THREE.PointLight(0x8fd4ff, 0.58, 26);
+  var coolLight = new THREE.PointLight(0x6fd4ff, 0.72, 26);
   coolLight.position.set(4.2, 4.8, -2.5);
   scene.add(coolLight);
 
@@ -326,9 +325,9 @@
     ctx.globalCompositeOperation = 'lighter';
     ctx.filter = 'blur(14px)';
     var bands = [
-      { x: 52, amp: 30, col: '255,150,215', a: 0.32 },
-      { x: 128, amp: 44, col: '170,215,255', a: 0.26 },
-      { x: 196, amp: 26, col: '215,170,255', a: 0.24 }
+      { x: 52, amp: 30, col: '150,205,255', a: 0.30 },
+      { x: 128, amp: 44, col: '185,228,255', a: 0.24 },
+      { x: 196, amp: 26, col: '120,185,255', a: 0.22 }
     ];
     for (var bi2 = 0; bi2 < bands.length; bi2++) {
       var bd = bands[bi2];
@@ -502,6 +501,33 @@
     }
   });
 
+  // solid luminous ice star for the big ornaments
+  var texStarSolid = makeTexture(256, function (ctx, s) {
+    var cx = s / 2, cy = s / 2;
+    ctx.translate(cx, cy);
+    ctx.shadowColor = 'rgba(140,215,255,.95)';
+    ctx.shadowBlur = 34;
+    var grad = ctx.createRadialGradient(0, 0, 2, 0, 0, s * 0.46);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.28, 'rgba(235,250,255,1)');
+    grad.addColorStop(0.62, 'rgba(165,220,255,.95)');
+    grad.addColorStop(1, 'rgba(110,185,255,.72)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    for (var vi2 = 0; vi2 < 10; vi2++) {
+      var va2 = -Math.PI / 2 + vi2 * Math.PI / 5;
+      var vr2 = vi2 % 2 === 0 ? s * 0.43 : s * 0.17;
+      if (vi2 === 0) ctx.moveTo(Math.cos(va2) * vr2, Math.sin(va2) * vr2);
+      else ctx.lineTo(Math.cos(va2) * vr2, Math.sin(va2) * vr2);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+  });
+
   var texButterfly = makeTexture(128, function (ctx, s) {
     ctx.translate(s / 2, s / 2);
     var g = ctx.createLinearGradient(-44, -40, 44, 46);
@@ -586,24 +612,24 @@
     ctx.clearRect(0, 0, s, 340);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    ctx.shadowColor = 'rgba(44,18,62,.62)';
+    ctx.shadowColor = 'rgba(2,10,24,.82)';
     ctx.shadowBlur = 22;
     var g = ctx.createLinearGradient(100, 80, 540, 250);
-    g.addColorStop(0, 'rgba(255,253,250,1)');
-    g.addColorStop(0.52, 'rgba(255,231,246,1)');
-    g.addColorStop(1, 'rgba(255,190,228,.96)');
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.52, 'rgba(232,248,255,1)');
+    g.addColorStop(1, 'rgba(180,224,255,.96)');
     ctx.fillStyle = g;
     ctx.font = 'italic 600 92px "Kaiti SC","STKaiti","KaiTi","Songti SC","Noto Serif SC",serif';
     ctx.fillText('@甄泽汝', 320, 190);
 
     ctx.shadowBlur = 14;
-    ctx.shadowColor = 'rgba(255,220,245,.7)';
-    ctx.fillStyle = 'rgba(255,244,251,.88)';
+    ctx.shadowColor = 'rgba(180,230,255,.75)';
+    ctx.fillStyle = 'rgba(225,246,255,.9)';
     ctx.font = 'italic 32px "Baskerville","Iowan Old Style",Georgia,serif';
     ctx.fillText('Merry Christmas', 320, 252);
 
     ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(255,225,244,.34)';
+    ctx.strokeStyle = 'rgba(190,232,255,.38)';
     ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.moveTo(200, 288); ctx.lineTo(440, 288); ctx.stroke();
   }, 340);
@@ -773,27 +799,27 @@
     h = Math.max(0, Math.min(1, h === undefined ? 0.5 : h));
     var r = Math.random();
     if (h > 0.68) {
-      if (r < 0.16) out.set('#ffffff');
-      else if (r < 0.44) out.set('#e2f4ff');
-      else if (r < 0.68) out.set('#b9c9ff');
-      else if (r < 0.88) out.set('#d8baff');
-      else out.set('#a9ffe3');
+      if (r < 0.18) out.set('#ffffff');
+      else if (r < 0.46) out.set('#e8f8ff');
+      else if (r < 0.70) out.set('#c4e2ff');
+      else if (r < 0.89) out.set('#9fc8ff');
+      else out.set('#d8f4ff');
     } else if (h > 0.35) {
       if (r < 0.08) out.set('#ffffff');
-      else if (r < 0.34) out.set('#ffd0e6');
-      else if (r < 0.56) out.set('#e2c0ff');
-      else if (r < 0.74) out.set('#c7acff');
-      else if (r < 0.90) out.set('#ffb2d4');
-      else out.set('#b3ffe5');
+      else if (r < 0.34) out.set('#dff4ff');
+      else if (r < 0.58) out.set('#b8dcff');
+      else if (r < 0.78) out.set('#8fc4ff');
+      else if (r < 0.92) out.set('#cfeaff');
+      else out.set('#a8e0ff');
     } else {
       if (r < 0.07) out.set('#ffffff');
-      else if (r < 0.30) out.set('#ffe2c8');
-      else if (r < 0.55) out.set('#ffc3de');
-      else if (r < 0.74) out.set('#ff9fc8');
-      else if (r < 0.90) out.set('#e9c9ff');
-      else out.set('#b3ffe6');
+      else if (r < 0.30) out.set('#eaf8ff');
+      else if (r < 0.55) out.set('#c0e0ff');
+      else if (r < 0.74) out.set('#8fc8ff');
+      else if (r < 0.90) out.set('#b8e8ff');
+      else out.set('#d8f0ff');
     }
-    if (tip && Math.random() < 0.30) out.lerp(whiteCol, 0.35);
+    if (tip && Math.random() < 0.30) out.lerp(whiteCol, 0.45);
     out.offsetHSL((Math.random() - 0.5) * 0.02, (Math.random() - 0.5) * 0.05, (Math.random() - 0.5) * 0.06);
     return out;
   }
@@ -1091,7 +1117,7 @@
   scene.add(bough);
 
   var boughCards = makePoints(bgPos, bgCol, bgSize, bgPhase, bgTw, bgDelay, makeTexPointMaterial(texBough, {
-    sizeScale: 1, opacity: 0.30, blending: THREE.NormalBlending
+    sizeScale: 1, opacity: 0.18, blending: THREE.NormalBlending
   }), bgRot);
   boughCards.renderOrder = 3;
   boughCards.visible = true;
@@ -1190,13 +1216,13 @@
   // tapered trunk, visible through the branches
   var trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(0.055, 0.23, TREE_H * 0.98, 8, 1),
-    new THREE.MeshLambertMaterial({ color: 0x6a465c })
+    new THREE.MeshLambertMaterial({ color: 0x24384a })
   );
   trunk.position.y = BASE_Y + TREE_H * 0.49;
   solidTree.add(trunk);
 
   var branchGeo = new THREE.CylinderGeometry(1, 1, 1, 5, 1);
-  var branchMat = new THREE.MeshLambertMaterial({ color: 0x4a2c42 });
+  var branchMat = new THREE.MeshLambertMaterial({ color: 0x1a2a3a });
   var branchXforms = [];
   var leafXforms = [];
   var leafColors = [];
@@ -1272,8 +1298,8 @@
 
   var leafGeo = new THREE.IcosahedronGeometry(1, 1);
   var leafMat = new THREE.MeshLambertMaterial({
-    color: 0xffeef8,
-    emissive: 0x2a172b,
+    color: 0x2e4a55,
+    emissive: 0x01060a,
     emissiveIntensity: 0.26
   });
   var leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, leafXforms.length);
@@ -1305,7 +1331,7 @@
 
   // inner glow behind the tree
   var treeHaloMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffc6e6, transparent: true, opacity: 0.22,
+    map: texGlow, color: 0x9fd4ff, transparent: true, opacity: 0.20,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var treeHalo = new THREE.Sprite(treeHaloMat);
@@ -1315,7 +1341,7 @@
   scene.add(treeHalo);
 
   var groundGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffcf9f, transparent: true, opacity: 0.46,
+    map: texGlow, color: 0x8fd4ff, transparent: true, opacity: 0.38,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   }));
   groundGlow.position.set(0, -3.55, -0.6);
@@ -1347,9 +1373,9 @@
   // wide pastel light washes behind the tree, like slow aurora
   var auroraSprites = [];
   var washSpecs = [
-    { x: -4.6, y: 2.6, z: -5.6, sx: 11.5, sy: 17.5, c: 0xff8fc8, o: 0.11, r: -0.32 },
-    { x: 4.4, y: 3.8, z: -6.2, sx: 10.5, sy: 16.0, c: 0x9fdcff, o: 0.10, r: 0.28 },
-    { x: 0.2, y: 0.6, z: -7.0, sx: 14.0, sy: 15.0, c: 0xc9a8ff, o: 0.075, r: 0.05 }
+    { x: -4.6, y: 2.6, z: -5.6, sx: 11.5, sy: 17.5, c: 0x5f9fff, o: 0.11, r: -0.32 },
+    { x: 4.4, y: 3.8, z: -6.2, sx: 10.5, sy: 16.0, c: 0x8fd4ff, o: 0.10, r: 0.28 },
+    { x: 0.2, y: 0.6, z: -7.0, sx: 14.0, sy: 15.0, c: 0x7fb8ff, o: 0.075, r: 0.05 }
   ];
   for (var wi = 0; wi < washSpecs.length; wi++) {
     var ws = washSpecs[wi];
@@ -1389,9 +1415,9 @@
     gPos.push(Math.cos(ga) * gr, gy, Math.sin(ga) * gr);
     var warm = new THREE.Color();
     var gw = Math.random();
-    if (gw < 0.52) warm.setHSL(0.095 + Math.random() * 0.035, 0.55, 0.82);
-    else if (gw < 0.82) warm.setHSL(0.91 + Math.random() * 0.05, 0.52, 0.82);
-    else warm.setHSL(0.56 + Math.random() * 0.05, 0.42, 0.86);
+    if (gw < 0.60) warm.setHSL(0.56 + Math.random() * 0.04, 0.34, 0.93);
+    else if (gw < 0.88) warm.setHSL(0.53 + Math.random() * 0.04, 0.50, 0.88);
+    else warm.setHSL(0.58 + Math.random() * 0.03, 0.18, 0.98);
     gCol.push(warm.r, warm.g, warm.b);
     gSize.push(0.12 + Math.random() * 0.12);
     gPhase.push(Math.random() * TAU);
@@ -1407,7 +1433,7 @@
   for (var gbi = 0; gbi < gPos.length / 3; gbi += 9) {
     gbPos.push(gPos[gbi * 3], gPos[gbi * 3 + 1], gPos[gbi * 3 + 2]);
     var gbc = new THREE.Color();
-    gbc.setHSL(0.095 + Math.random() * 0.02, 0.62, 0.82);
+    gbc.setHSL(0.56 + Math.random() * 0.03, 0.36, 0.94);
     gbCol.push(gbc.r, gbc.g, gbc.b);
     gbSize.push(0.34 + Math.random() * 0.14);
     gbPhase.push(Math.random() * TAU);
@@ -1423,7 +1449,7 @@
 
   // pearl ornaments
   var oPos = [], oCol = [], oSize = [], oPhase = [], oTw = [], oDelay = [], oRot = [];
-  var ornamentColors = ['#ffcf8a', '#ff9fc8', '#b99cff', '#8fdcff', '#9dffd0', '#fff0d0'];
+  var ornamentColors = ['#eaf8ff', '#bfe4ff', '#9fd4ff', '#ffffff', '#d8f4ff', '#a8e8ff'];
   for (var oi = 0; oi < 120; oi++) {
     var ot = 0.05 + Math.random() * 0.88;
     var oa = Math.random() * TAU;
@@ -1452,7 +1478,7 @@
 
   // a handful of larger glowing baubles so the decoration reads at a glance
   var bbPos = [], bbCol = [], bbSize = [], bbPhase = [], bbTw = [], bbDelay = [];
-  var bbColors = ['#ff8fc0', '#8fd0ff', '#ffd08a', '#c9a8ff', '#a8ffd8'];
+  var bbColors = ['#ffffff', '#d8f4ff', '#bfe8ff', '#9fd8ff', '#e8ffff'];
   for (var bbi = 0; bbi < 22; bbi++) {
     var bbt = 0.12 + Math.random() * 0.78;
     var bba = Math.random() * TAU;
@@ -1473,9 +1499,9 @@
   scene.add(bigBaubles);
 
   // saturated fairy bulbs tucked into the boughs
-  var bulbColors = ['#ffd79a', '#ff9fc8', '#8fdcff', '#b9ffd9', '#ffc28a', '#d4b0ff', '#ffb8dd', '#fff0c8'];
+  var bulbColors = ['#ffffff', '#dff6ff', '#bfe8ff', '#9fd8ff', '#e8ffff', '#cfeaff'];
   var lbPos = [], lbCol = [], lbSize = [], lbPhase = [], lbTw = [], lbDelay = [], lbRot = [];
-  for (var li = 0; li < 84; li++) {
+  for (var li = 0; li < 96; li++) {
     var ltier = Math.floor(Math.random() * (TIERS - 1));
     var lt = (ltier + 0.55 + Math.random() * 0.4) / TIERS;
     var la = Math.random() * TAU;
@@ -1483,7 +1509,7 @@
     lbPos.push(Math.cos(la) * lr, tierY(lt) - 0.14 - Math.random() * 0.16, Math.sin(la) * lr);
     var lc = new THREE.Color(bulbColors[Math.floor(Math.random() * bulbColors.length)]);
     lbCol.push(lc.r, lc.g, lc.b);
-    lbSize.push(0.26 + Math.random() * 0.20);
+    lbSize.push(0.18 + Math.random() * 0.16);
     lbPhase.push(Math.random() * TAU);
     lbTw.push(0.7);
     lbDelay.push(0.2 + Math.random() * 0.5);
@@ -1504,21 +1530,21 @@
 
   // scattered little star charms on the boughs
   var scPos = [], scCol = [], scSize = [], scPhase = [], scTw = [], scDelay = [];
-  var charmColors = ['#ffe7b8', '#ffc4e2', '#d8c4ff', '#bfe8ff', '#fff6e6'];
-  for (var sci = 0; sci < 38; sci++) {
+  var charmColors = ['#ffffff', '#e8f8ff', '#bfe4ff', '#d8f4ff', '#9fd4ff'];
+  for (var sci = 0; sci < 22; sci++) {
     var sct = 0.08 + Math.random() * 0.84;
     var sca = Math.random() * TAU;
     var scr = tierRadius(sct) * (0.98 + Math.random() * 0.06);
     scPos.push(Math.cos(sca) * scr, tierY(sct) - 0.08 + (Math.random() - 0.5) * 0.3, Math.sin(sca) * scr);
     var scc = new THREE.Color(charmColors[Math.floor(Math.random() * charmColors.length)]);
     scCol.push(scc.r, scc.g, scc.b);
-    scSize.push(0.26 + Math.random() * 0.26);
+    scSize.push(0.55 + Math.random() * 0.62);
     scPhase.push(Math.random() * TAU);
     scTw.push(0.85);
     scDelay.push(0.2 + Math.random() * 0.5);
   }
-  var starCharms = makePoints(scPos, scCol, scSize, scPhase, scTw, scDelay, makeTexPointMaterial(texStar, {
-    sizeScale: 1, opacity: 0.82, depthTest: false
+  var starCharms = makePoints(scPos, scCol, scSize, scPhase, scTw, scDelay, makeTexPointMaterial(texStarSolid, {
+    sizeScale: 1, opacity: 0.95, depthTest: false
   }));
   starCharms.frustumCulled = false;
   starCharms.renderOrder = 7;
@@ -1533,7 +1559,7 @@
     orbPos.push(Math.cos(oba) * obr, tierY(obt) + (Math.random() - 0.5) * 0.8, Math.sin(oba) * obr);
     var obc = new THREE.Color();
     var oh = Math.random();
-    obc.setHSL(oh < 0.28 ? 0.10 : (oh < 0.64 ? 0.93 : 0.58), 0.50 + Math.random() * 0.18, 0.82);
+    obc.setHSL(oh < 0.62 ? 0.57 : 0.53, 0.22 + Math.random() * 0.30, 0.86);
     orbCol.push(obc.r, obc.g, obc.b);
     orbSize.push(0.32 + Math.random() * 0.72);
     orbPhase.push(Math.random() * TAU);
@@ -1556,9 +1582,9 @@
     fPos.push(Math.cos(fa) * fr, tierY(ft) - 0.06 + (Math.random() - 0.5) * 0.24, Math.sin(fa) * fr);
     var fc = new THREE.Color();
     var fw = Math.random();
-    if (fw < 0.68) fc.setHSL(0.10 + Math.random() * 0.035, 0.52, 0.86);
-    else if (fw < 0.88) fc.setHSL(0.92 + Math.random() * 0.04, 0.50, 0.86);
-    else fc.setHSL(0.57 + Math.random() * 0.04, 0.42, 0.88);
+    if (fw < 0.70) fc.setHSL(0.56 + Math.random() * 0.04, 0.30, 0.90);
+    else if (fw < 0.90) fc.setHSL(0.53 + Math.random() * 0.04, 0.45, 0.86);
+    else fc.setHSL(0.58 + Math.random() * 0.03, 0.18, 0.96);
     fCol.push(fc.r, fc.g, fc.b);
     fSize.push(0.07 + Math.random() * 0.09);
     fPhase.push(Math.random() * TAU);
@@ -1572,6 +1598,27 @@
   fairyLights.renderOrder = 6;
   scene.add(fairyLights);
 
+  // fine frost sparkle covering the whole tree
+  var frPos = [], frCol = [], frSize = [], frPhase = [], frTw = [], frDelay = [];
+  for (var fri = 0; fri < 620; fri++) {
+    var frt = 0.05 + Math.random() * 0.90;
+    var fra = Math.random() * TAU;
+    var frr = tierRadius(frt) * (0.985 + Math.random() * 0.045);
+    frPos.push(Math.cos(fra) * frr, tierY(frt) - 0.03 + (Math.random() - 0.5) * 0.18, Math.sin(fra) * frr);
+    var frc = new THREE.Color(fri % 4 === 0 ? '#ffffff' : '#d8f4ff');
+    frCol.push(frc.r, frc.g, frc.b);
+    frSize.push(0.025 + Math.random() * 0.055);
+    frPhase.push(Math.random() * TAU);
+    frTw.push(0.9);
+    frDelay.push(0.08 + Math.random() * 0.6);
+  }
+  var frost = makePoints(frPos, frCol, frSize, frPhase, frTw, frDelay, makeTexPointMaterial(texGlow, {
+    sizeScale: 1, opacity: 0.95, depthTest: false
+  }));
+  frost.frustumCulled = false;
+  frost.renderOrder = 6;
+  scene.add(frost);
+
   // out-of-focus foreground bokeh for depth
   var fgPos = [], fgCol = [], fgSize = [], fgPhase = [], fgTw = [], fgDelay = [];
   for (var fgi = 0; fgi < 14; fgi++) {
@@ -1580,7 +1627,7 @@
     fgPos.push(Math.cos(fga) * fgr, -2.0 + Math.random() * 7.6, 2.0 + Math.random() * 2.8);
     var fgc = new THREE.Color();
     var fgh = Math.random();
-    fgc.setHSL(fgh < 0.4 ? 0.10 : (fgh < 0.72 ? 0.93 : 0.58), 0.50, 0.82);
+    fgc.setHSL(fgh < 0.62 ? 0.57 : 0.53, 0.24, 0.86);
     fgCol.push(fgc.r, fgc.g, fgc.b);
     fgSize.push(1.1 + Math.random() * 1.5);
     fgPhase.push(Math.random() * TAU);
@@ -1673,7 +1720,7 @@
   starGroup.add(starGlow);
 
   var starHaloMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffd7a6, transparent: true, opacity: 0.20,
+    map: texGlow, color: 0xbfe8ff, transparent: true, opacity: 0.22,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var starHalo = new THREE.Sprite(starHaloMat);
@@ -1687,7 +1734,7 @@
     var ra = ri / 18 * TAU;
     var rr = 1.02 + Math.random() * 0.32;
     ringPos.push(Math.cos(ra) * rr, (Math.random() - 0.5) * 0.55, Math.sin(ra) * rr);
-    var rc = new THREE.Color(ri % 3 === 0 ? '#ffd9a8' : (ri % 3 === 1 ? '#ffc4e2' : '#d8e8ff'));
+    var rc = new THREE.Color(ri % 3 === 0 ? '#ffffff' : (ri % 3 === 1 ? '#d8f4ff' : '#a8d8ff'));
     ringCol.push(rc.r, rc.g, rc.b);
     ringSize.push(0.14 + Math.random() * 0.14);
     ringPhase.push(Math.random() * TAU);
@@ -1705,7 +1752,7 @@
    *  Moon, mist, butterflies, cat, signature
    * ---------------------------------------------------------------- */
   var moonMat = new THREE.SpriteMaterial({
-    map: texMoon, color: 0xfff0dc, transparent: true, opacity: 0.38,
+    map: texMoon, color: 0xdfeeff, transparent: true, opacity: 0.32,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var moon = new THREE.Sprite(moonMat);
@@ -1715,7 +1762,7 @@
   scene.add(moon);
 
   var moonGlowMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffe2cc, transparent: true, opacity: 0.13,
+    map: texGlow, color: 0x9fd4ff, transparent: true, opacity: 0.11,
     blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
   });
   var moonGlow = new THREE.Sprite(moonGlowMat);
@@ -1768,7 +1815,7 @@
   }
 
   var catMat = new THREE.SpriteMaterial({
-    map: texCat, color: 0xfffbff, transparent: true, opacity: 0,
+    map: texCat, color: 0xeaf8ff, transparent: true, opacity: 0,
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var cat = new THREE.Sprite(catMat);
@@ -1778,7 +1825,7 @@
   camera.add(cat);
 
   var catPadMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.58,
+    map: texGlow, color: 0x020812, transparent: true, opacity: 0.62,
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var catPad = new THREE.Sprite(catPadMat);
@@ -1788,7 +1835,7 @@
   camera.add(catPad);
 
   var signPadMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.42,
+    map: texGlow, color: 0x020812, transparent: true, opacity: 0.44,
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var signPad = new THREE.Sprite(signPadMat);
@@ -1810,7 +1857,7 @@
   /* ---------------------------------------------------------------- *
    *  Snow + distant stars
    * ---------------------------------------------------------------- */
-  var snowCount = 860;
+  var snowCount = 1400;
   var snowGeo = new THREE.BufferGeometry();
   var snowPos = new Float32Array(snowCount * 3);
   var snowCol = new Float32Array(snowCount * 3);
@@ -1826,7 +1873,7 @@
     snowPos[sni * 3] = sx;
     snowPos[sni * 3 + 1] = sy;
     snowPos[sni * 3 + 2] = sz;
-    var sc2 = new THREE.Color(Math.random() < 0.75 ? '#fff8ff' : '#e6d8ff');
+    var sc2 = new THREE.Color(Math.random() < 0.80 ? '#ffffff' : '#d8f0ff');
     var bigFlake = Math.random() < 0.09;
     if (bigFlake) sc2.multiplyScalar(0.58);
     snowCol[sni * 3] = sc2.r; snowCol[sni * 3 + 1] = sc2.g; snowCol[sni * 3 + 2] = sc2.b;
@@ -1966,32 +2013,32 @@
       'void main(){',
       '  vec2 uv = vUv;',
       '  vec2 p = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);',
-      '  vec3 top = vec3(0.015, 0.024, 0.068);',
-      '  vec3 bottom = vec3(0.072, 0.034, 0.086);',
+      '  vec3 top = vec3(0.002, 0.006, 0.020);',
+      '  vec3 bottom = vec3(0.010, 0.028, 0.058);',
       '  vec3 col = mix(bottom, top, smoothstep(0.0, 1.0, uv.y));',
-      '  col += vec3(0.34, 0.19, 0.42) * exp(-length(p * vec2(0.78, 1.0) + vec2(0.0, -0.02)) * 2.1) * 0.62;',
-      '  col += vec3(0.28, 0.08, 0.20) * exp(-length((uv - vec2(0.20, 0.35)) * vec2(uRes.x / uRes.y, 1.0)) * 3.6) * 0.34;',
-      '  col += vec3(0.06, 0.14, 0.26) * exp(-length((uv - vec2(0.82, 0.62)) * vec2(uRes.x / uRes.y, 1.0)) * 3.2) * 0.44;',
-      '  col += vec3(0.03, 0.11, 0.12) * exp(-length((uv - vec2(0.12, 0.88)) * vec2(uRes.x / uRes.y, 1.0)) * 2.6) * 0.5;',
+      '  col += vec3(0.10, 0.20, 0.34) * exp(-length(p * vec2(0.78, 1.0) + vec2(0.0, -0.02)) * 2.1) * 0.55;',
+      '  col += vec3(0.06, 0.16, 0.30) * exp(-length((uv - vec2(0.20, 0.35)) * vec2(uRes.x / uRes.y, 1.0)) * 3.6) * 0.30;',
+      '  col += vec3(0.10, 0.22, 0.38) * exp(-length((uv - vec2(0.82, 0.62)) * vec2(uRes.x / uRes.y, 1.0)) * 3.2) * 0.40;',
+      '  col += vec3(0.04, 0.14, 0.26) * exp(-length((uv - vec2(0.12, 0.88)) * vec2(uRes.x / uRes.y, 1.0)) * 2.6) * 0.45;',
       '  float curtain = sin(uv.x * 5.2 + sin(uv.y * 4.0 + uTime * 0.035) * 1.35 + uTime * 0.018);',
       '  curtain = smoothstep(0.55, 1.0, curtain) * smoothstep(0.10, 0.58, uv.y) * smoothstep(1.02, 0.58, uv.y);',
-      '  col += vec3(0.16, 0.08, 0.24) * curtain * 0.26;',
+      '  col += vec3(0.04, 0.12, 0.22) * curtain * 0.24;',
       '  float aur1 = exp(-pow((uv.y - (0.76 + 0.055 * sin(uv.x * 4.4 + 1.3))) * 7.0, 2.0));',
       '  float aur2 = exp(-pow((uv.y - (0.54 + 0.050 * sin(uv.x * 5.7 + 3.4))) * 10.0, 2.0));',
-      '  col += vec3(0.05, 0.17, 0.15) * aur1 * 0.42;',
-      '  col += vec3(0.19, 0.05, 0.15) * aur2 * 0.24;',
+      '  col += vec3(0.04, 0.14, 0.22) * aur1 * 0.38;',
+      '  col += vec3(0.03, 0.10, 0.20) * aur2 * 0.20;',
       '  float grain = hash21(uv * uRes) - 0.5;',
       '  col += grain * 0.018;',
       '  vec3 sceneCol = texture2D(tScene, uv).rgb;',
       '  float sceneA = texture2D(tScene, uv).a;',
       '  vec3 bloom = texture2D(tBloom, uv).rgb;',
       '  col = col * (1.0 - sceneA) + sceneCol;',
-      '  col += bloom * 1.22;',
+      '  col += bloom * 1.35;',
       '  col = vec3(1.0) - exp(-col * 1.24);',
       '  float lowWash = smoothstep(0.66, 0.04, uv.y);',
-      '  col = mix(col, col * vec3(1.10, 0.80, 0.93), lowWash * 0.34);',
+      '  col = mix(col, col * vec3(0.74, 0.88, 1.18), lowWash * 0.38);',
       '  float highWash = smoothstep(0.46, 0.96, uv.y);',
-      '  col = mix(col, col * vec3(0.84, 0.95, 1.12), highWash * 0.30);',
+      '  col = mix(col, col * vec3(0.72, 0.88, 1.20), highWash * 0.34);',
       '  vec2 q = uv - 0.5;',
       '  float vig = smoothstep(0.98, 0.22, length(q * vec2(1.05, 1.18)));',
       '  col *= mix(0.58, 1.0, vig);',
