@@ -528,8 +528,27 @@
     ctx.stroke();
   });
 
-  var texButterfly = makeTexture(128, function (ctx, s) {
-    ctx.translate(s / 2, s / 2);
+  var texLightScript = makeTexture(1024, function (ctx, s) {
+    var w = s, h = 320;
+    ctx.clearRect(0, 0, w, h);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'italic 92px "Segoe Script","Brush Script MT",cursive';
+    var g = ctx.createLinearGradient(0, 40, 0, 280);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.55, 'rgba(213,242,255,1)');
+    g.addColorStop(1, 'rgba(148,216,255,.92)');
+    ctx.shadowColor = 'rgba(120,210,255,.95)';
+    ctx.shadowBlur = 26;
+    ctx.fillStyle = g;
+    ctx.fillText('Walking in the Air', w / 2, h / 2 + 6);
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = 'rgba(235,250,255,.85)';
+    ctx.lineWidth = 2.2;
+    ctx.strokeText('Walking in the Air', w / 2, h / 2 + 6);
+  }, 320);
+
+  var texButterfly = makeTexture(128, function (ctx, s) {    ctx.translate(s / 2, s / 2);
     var g = ctx.createLinearGradient(-44, -40, 44, 46);
     g.addColorStop(0, 'rgba(255,246,252,1)');
     g.addColorStop(0.35, 'rgba(255,199,229,1)');
@@ -1561,6 +1580,17 @@
   ropeBulbs.renderOrder = 7;
   scene.add(ropeBulbs);
 
+  var lightScriptMat = new THREE.SpriteMaterial({
+    map: texLightScript, color: 0xffffff, transparent: true, opacity: 0.55,
+    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
+  });
+  var lightScript = new THREE.Sprite(lightScriptMat);
+  lightScript.position.set(0.25, 1.95, 2.2);
+  lightScript.scale.set(4.0, 1.25, 1);
+  lightScript.material.rotation = -0.13;
+  lightScript.renderOrder = 8;
+  scene.add(lightScript);
+
   // larger warm bulbs punctuating the garland
   var gbPos = [], gbCol = [], gbSize = [], gbPhase = [], gbTw = [], gbDelay = [];
   for (var gbi = 0; gbi < gPos.length / 3; gbi += 9) {
@@ -2027,7 +2057,7 @@
     snowTw[sni] = 0.35;
     snowDelay[sni] = 0;
     snowData.push({
-      speed: (0.22 + Math.random() * 0.55) * (bigFlake ? 0.55 : 1.25),
+      speed: (0.34 + Math.random() * 0.72) * (bigFlake ? 0.55 : 1.25),
       drift: 0.15 + Math.random() * 0.35,
       phase: Math.random() * TAU
     });
@@ -2293,6 +2323,16 @@
       target.y + spherical.r * Math.cos(spherical.phi),
       target.z + spherical.r * sp * Math.cos(spherical.theta)
     );
+
+    // slow cinematic drift: a breath of parallax and dolly, like the reference clip
+    if (!intro.active) {
+      var cineK = Math.max(0, Math.min(1, (now - lastInteract - 3200) / 2600));
+      camera.position.x += Math.sin(now * 0.00025) * 0.44 * cineK;
+      camera.position.y += Math.sin(now * 0.00018 + 1.2) * 0.22 * cineK;
+      var dolly = 1.0 - 0.055 * (0.5 - 0.5 * Math.cos(now * 0.00035)) * cineK;
+      camera.position.sub(target).multiplyScalar(dolly).add(target);
+    }
+
     camera.lookAt(target);
   }
 
@@ -2403,7 +2443,7 @@
     compositeMat.uniforms.uOpen.value = Math.min(1, (now - startTime) / 1500);
 
     if (!dragging && intro.active === false && now - lastInteract > 5200) {
-      spherical.theta += dt * 0.032;
+      spherical.theta += dt * 0.010;
     }
     if (!dragging && !intro.active) {
       velTheta *= 0.92;
@@ -2423,6 +2463,8 @@
     starGlowMat.opacity = 0.58 + Math.sin(elapsed * 0.9) * 0.06;
     starGlowMat.rotation = elapsed * 0.035;
     starHaloMat.opacity = 0.15 + Math.sin(elapsed * 0.7 + 1.0) * 0.03;
+    lightScriptMat.opacity = 0.48 + Math.sin(elapsed * 0.8) * 0.06;
+    lightScript.material.rotation = -0.13 + Math.sin(elapsed * 0.12) * 0.015;
 
     // snow
     var posAttr = snowGeo.getAttribute('position');
