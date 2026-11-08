@@ -1778,7 +1778,7 @@
   camera.add(cat);
 
   var catPadMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.48,
+    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.58,
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var catPad = new THREE.Sprite(catPadMat);
@@ -1788,7 +1788,7 @@
   camera.add(catPad);
 
   var signPadMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.34,
+    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.42,
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var signPad = new THREE.Sprite(signPadMat);
@@ -1986,7 +1986,7 @@
       '  float sceneA = texture2D(tScene, uv).a;',
       '  vec3 bloom = texture2D(tBloom, uv).rgb;',
       '  col = col * (1.0 - sceneA) + sceneCol;',
-      '  col += bloom * 0.95;',
+      '  col += bloom * 1.22;',
       '  col = vec3(1.0) - exp(-col * 1.24);',
       '  float lowWash = smoothstep(0.66, 0.04, uv.y);',
       '  col = mix(col, col * vec3(1.10, 0.80, 0.93), lowWash * 0.34);',
