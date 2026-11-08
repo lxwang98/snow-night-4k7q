@@ -192,6 +192,20 @@
   renderer.autoClear = true;
 
   var scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffe6f7, 0x24122e, 0.62));
+
+  var keyLight = new THREE.DirectionalLight(0xfff0fa, 0.72);
+  keyLight.position.set(5.5, 9.0, 7.5);
+  scene.add(keyLight);
+
+  var rimLight = new THREE.DirectionalLight(0xff8fc8, 0.82);
+  rimLight.position.set(-6.0, 3.2, -5.0);
+  scene.add(rimLight);
+
+  var coolLight = new THREE.PointLight(0x8fd4ff, 0.58, 26);
+  coolLight.position.set(4.2, 4.8, -2.5);
+  scene.add(coolLight);
+
   var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 160);
   scene.add(camera);
 
@@ -1049,9 +1063,9 @@
   scene.add(bough);
 
   var boughCards = makePoints(bgPos, bgCol, bgSize, bgPhase, bgTw, bgDelay, makeTexPointMaterial(texBough, {
-    sizeScale: 1, opacity: 0.46, blending: THREE.NormalBlending
+    sizeScale: 1, opacity: 0.30, blending: THREE.NormalBlending
   }), bgRot);
-  boughCards.renderOrder = 0;
+  boughCards.renderOrder = 3;
   boughCards.visible = true;
   scene.add(boughCards);
 
@@ -1138,6 +1152,128 @@
   }));
   scene.add(cloudMass);
 
+  /* ---------------------------------------------------------------- *
+   *  Solid tree core: trunk, real branches, clustered foliage
+   * ---------------------------------------------------------------- */
+  var solidTree = new THREE.Group();
+  solidTree.renderOrder = 1;
+  scene.add(solidTree);
+
+  // tapered trunk, visible through the branches
+  var trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.23, TREE_H * 0.98, 8, 1),
+    new THREE.MeshLambertMaterial({ color: 0x6a465c })
+  );
+  trunk.position.y = BASE_Y + TREE_H * 0.49;
+  solidTree.add(trunk);
+
+  var branchGeo = new THREE.CylinderGeometry(1, 1, 1, 5, 1);
+  var branchMat = new THREE.MeshLambertMaterial({ color: 0x4a2c42 });
+  var branchXforms = [];
+  var leafXforms = [];
+  var leafColors = [];
+  var CORE_TIERS = 12;
+  var upAxis = new THREE.Vector3(0, 1, 0);
+
+  for (var ct2 = 0; ct2 < CORE_TIERS; ct2++) {
+    var ctt = 0.10 + (ct2 / (CORE_TIERS - 1)) * 0.82;
+    var cyb = tierY(ctt);
+    var cR = tierRadius(ctt) * 0.98;
+    var cN = Math.round(8 + 3 * (1 - ctt));
+    for (var cb = 0; cb < cN; cb++) {
+      var cAng = (cb / cN) * TAU + ct2 * 0.77 + (Math.random() - 0.5) * 0.28;
+      var cLen = cR * (0.82 + Math.random() * 0.20);
+      var cDroop = (0.20 + Math.random() * 0.26) * (cLen / MAX_R) * 1.5;
+      var cTwist = (Math.random() - 0.5) * 0.45;
+      var x1 = Math.cos(cAng) * 0.09, z1 = Math.sin(cAng) * 0.09;
+      var x2 = Math.cos(cAng + cTwist) * cLen * 1.04;
+      var z2 = Math.sin(cAng + cTwist) * cLen * 1.04;
+      var y1 = cyb;
+      var y2 = cyb - cDroop;
+      branchXforms.push({ x1: x1, y1: y1, z1: z1, x2: x2, y2: y2, z2: z2, w: 0.022 + 0.012 * (1 - ctt) });
+      var bdx = x2 - x1, bdy = y2 - y1, bdz = z2 - z1;
+      var bdl = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz) || 1;
+      bdx /= bdl; bdy /= bdl; bdz /= bdl;
+
+      // many small needle tufts, flattened along the bough, leave gaps for the wood
+      for (var lk = 0; lk < 15; lk++) {
+        var ls = 0.08 + 0.88 * (lk / 14);
+        var lr = 0.08 + (cLen - 0.08) * Math.pow(ls, 1.04);
+        var la = cAng + cTwist * ls;
+        var ly = cyb - cDroop * Math.pow(ls, 1.45);
+        var jitter = 0.09 + 0.12 * (1 - ctt);
+        var lx = Math.cos(la) * lr + (Math.random() - 0.5) * jitter;
+        var lz = Math.sin(la) * lr + (Math.random() - 0.5) * jitter;
+        var ly2 = ly + (Math.random() - 0.5) * jitter * 0.8;
+        var lscale = (0.145 + Math.random() * 0.105) * (1.02 - 0.24 * ctt);
+        if (lk === 14) lscale *= 1.25;
+        pickColor(tmpColor, Math.random() < 0.30, ctt);
+        tmpColor.lerp(whiteCol, 0.03 + Math.random() * 0.10);
+        leafXforms.push({
+          x: lx, y: ly2, z: lz,
+          sx: lscale * (1.05 + Math.random() * 0.30),
+          sy: lscale * (0.64 + Math.random() * 0.16),
+          sz: lscale * (0.92 + Math.random() * 0.26),
+          rx: Math.random() * TAU, ry: Math.random() * TAU, rz: Math.random() * TAU
+        });
+        leafColors.push(tmpColor.clone());
+      }
+    }
+  }
+
+  var bMesh = new THREE.InstancedMesh(branchGeo, branchMat, branchXforms.length);
+  var m4 = new THREE.Matrix4();
+  var q4 = new THREE.Quaternion();
+  var vMid = new THREE.Vector3();
+  var vDir = new THREE.Vector3();
+  var vScale = new THREE.Vector3();
+  for (var bx = 0; bx < branchXforms.length; bx++) {
+    var B = branchXforms[bx];
+    vMid.set((B.x1 + B.x2) * 0.5, (B.y1 + B.y2) * 0.5, (B.z1 + B.z2) * 0.5);
+    vDir.set(B.x2 - B.x1, B.y2 - B.y1, B.z2 - B.z1);
+    var blen = vDir.length();
+    vDir.normalize();
+    q4.setFromUnitVectors(upAxis, vDir);
+    vScale.set(B.w, blen, B.w);
+    m4.compose(vMid, q4, vScale);
+    bMesh.setMatrixAt(bx, m4);
+  }
+  bMesh.instanceMatrix.needsUpdate = true;
+  solidTree.add(bMesh);
+
+  var leafGeo = new THREE.IcosahedronGeometry(1, 1);
+  var leafMat = new THREE.MeshLambertMaterial({
+    color: 0xffffff,
+    emissive: 0x2a172b,
+    emissiveIntensity: 0.32
+  });
+  var leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, leafXforms.length);
+  var e4 = new THREE.Euler();
+  for (var lx2 = 0; lx2 < leafXforms.length; lx2++) {
+    var L = leafXforms[lx2];
+    e4.set(L.rx, L.ry, L.rz);
+    q4.setFromEuler(e4);
+    vMid.set(L.x, L.y, L.z);
+    vScale.set(L.sx, L.sy, L.sz);
+    m4.compose(vMid, q4, vScale);
+    leafMesh.setMatrixAt(lx2, m4);
+    leafMesh.setColorAt(lx2, leafColors[lx2]);
+  }
+  leafMesh.instanceMatrix.needsUpdate = true;
+  if (leafMesh.instanceColor) leafMesh.instanceColor.needsUpdate = true;
+  solidTree.add(leafMesh);
+
+  // the solid core replaces the particle mist as the tree body
+  boughCards.visible = true;
+  coreCloud.visible = false;
+  bough.visible = false;
+  cloudMass.visible = false;
+  haze.visible = false;
+  fluff.visible = false;
+  tree.visible = false;
+  inner.visible = false;
+
+
   // inner glow behind the tree
   var treeHaloMat = new THREE.SpriteMaterial({
     map: texGlow, color: 0xffc6e6, transparent: true, opacity: 0.16,
@@ -1223,14 +1359,14 @@
   ornamentGeo.setAttribute('aTwinkle', new THREE.Float32BufferAttribute(oTw, 1));
   ornamentGeo.setAttribute('aDelay', new THREE.Float32BufferAttribute(oDelay, 1));
   ornamentGeo.setAttribute('aRot', new THREE.Float32BufferAttribute(oRot, 1));
-  var ornaments = new THREE.Points(ornamentGeo, makeTexPointMaterial(texPearl, { sizeScale: 1, opacity: 1 }));
+  var ornaments = new THREE.Points(ornamentGeo, makeTexPointMaterial(texPearl, { sizeScale: 1, opacity: 1, depthTest: false }));
   ornaments.frustumCulled = false;
   scene.add(ornaments);
 
   // saturated fairy bulbs tucked into the boughs
   var bulbColors = ['#ff7fb8', '#7fddff', '#a9ffcf', '#ffd08a', '#c79bff', '#ff9fce'];
   var lbPos = [], lbCol = [], lbSize = [], lbPhase = [], lbTw = [], lbDelay = [], lbRot = [];
-  for (var li = 0; li < 42; li++) {
+  for (var li = 0; li < 58; li++) {
     var ltier = Math.floor(Math.random() * (TIERS - 1));
     var lt = (ltier + 0.55 + Math.random() * 0.4) / TIERS;
     var la = Math.random() * TAU;
@@ -1238,7 +1374,7 @@
     lbPos.push(Math.cos(la) * lr, tierY(lt) - 0.14 - Math.random() * 0.16, Math.sin(la) * lr);
     var lc = new THREE.Color(bulbColors[Math.floor(Math.random() * bulbColors.length)]);
     lbCol.push(lc.r, lc.g, lc.b);
-    lbSize.push(0.20 + Math.random() * 0.22);
+    lbSize.push(0.16 + Math.random() * 0.16);
     lbPhase.push(Math.random() * TAU);
     lbTw.push(0.7);
     lbDelay.push(0.2 + Math.random() * 0.5);
@@ -1252,7 +1388,7 @@
   bulbGeo.setAttribute('aTwinkle', new THREE.Float32BufferAttribute(lbTw, 1));
   bulbGeo.setAttribute('aDelay', new THREE.Float32BufferAttribute(lbDelay, 1));
   bulbGeo.setAttribute('aRot', new THREE.Float32BufferAttribute(lbRot, 1));
-  var bulbs = new THREE.Points(bulbGeo, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.9 }));
+  var bulbs = new THREE.Points(bulbGeo, makeTexPointMaterial(texGlow, { sizeScale: 1, opacity: 0.9, depthTest: false }));
   bulbs.frustumCulled = false;
   scene.add(bulbs);
 
@@ -1414,27 +1550,37 @@
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var cat = new THREE.Sprite(catMat);
-  cat.position.set(1.32, -3.30, -12);
-  cat.scale.set(1.52, 1.52, 1);
+  cat.position.set(1.32, -3.15, -12);
+  cat.scale.set(1.42, 1.42, 1);
   cat.renderOrder = 10;
   camera.add(cat);
 
   var catPadMat = new THREE.SpriteMaterial({
-    map: texGlow, color: 0xffd3e8, transparent: true, opacity: 0.30,
-    blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false
+    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.48,
+    blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var catPad = new THREE.Sprite(catPadMat);
-  catPad.position.set(1.32, -3.96, -12);
-  catPad.scale.set(3.2, 0.9, 1);
-  catPad.renderOrder = 9;
+  catPad.position.set(1.32, -3.15, -12.06);
+  catPad.scale.set(3.0, 2.3, 1);
+  catPad.renderOrder = 8;
   camera.add(catPad);
+
+  var signPadMat = new THREE.SpriteMaterial({
+    map: texGlow, color: 0x2a1230, transparent: true, opacity: 0.34,
+    blending: THREE.NormalBlending, depthWrite: false, depthTest: false
+  });
+  var signPad = new THREE.Sprite(signPadMat);
+  signPad.position.set(1.32, -1.95, -12.06);
+  signPad.scale.set(2.75, 1.55, 1);
+  signPad.renderOrder = 9;
+  camera.add(signPad);
 
   var signMat = new THREE.SpriteMaterial({
     map: texSignature, color: 0xffffff, transparent: true, opacity: 0,
     blending: THREE.NormalBlending, depthWrite: false, depthTest: false
   });
   var sign = new THREE.Sprite(signMat);
-  sign.position.set(1.32, -1.62, -12);
+  sign.position.set(1.32, -1.95, -12);
   sign.scale.set(2.0, 1.062, 1);
   sign.renderOrder = 11;
   camera.add(sign);
@@ -1660,9 +1806,10 @@
     // keep the foreground cat and dedication at the same relative place on every phone
     var fgHalfW = Math.tan(camera.fov * Math.PI / 360) * 12 * camera.aspect;
     var fgX = fgHalfW * 0.52;
-    cat.position.x = fgX;
-    catPad.position.x = fgX;
-    sign.position.x = fgX;
+    cat.position.x = fgX * 1.46;
+    catPad.position.x = fgX * 1.46;
+    sign.position.x = fgX * 1.20;
+    signPad.position.x = fgX * 1.20;
 
     var bw = Math.floor(w * DPR * 0.5);
     var bh = Math.floor(h * DPR * 0.5);
@@ -1826,7 +1973,7 @@
   var catBase = 0.93, signBase = 0.98;
   var lastNow = performance.now();
   var elapsed = 0;
-  window.__debug = { cat: cat, sign: sign, catMat: catMat, signMat: signMat, camera: camera, target: target, catPad: catPad, catPadMat: catPadMat, scene: scene, setTheta: function (t) { spherical.theta = t; intro.active = false; }, getTheta: function () { return spherical.theta; } };
+  window.__debug = { cat: cat, sign: sign, catMat: catMat, signMat: signMat, camera: camera, target: target, catPad: catPad, catPadMat: catPadMat, scene: scene, solidTree: solidTree, setTheta: function (t) { spherical.theta = t; intro.active = false; }, getTheta: function () { return spherical.theta; } };
 
   function animate() {
     requestAnimationFrame(animate);
@@ -1904,8 +2051,10 @@
     var signIn = Math.max(0, Math.min(1, (lifeT - 3.3) / 1.8));
     catMat.opacity = catBase * catIn;
     signMat.opacity = signBase * signIn;
-    cat.position.y = -3.30 + Math.sin(elapsed * 0.8) * 0.008;
-    sign.position.y = -1.62 + Math.sin(elapsed * 0.55 + 1.4) * 0.006;
+    catPadMat.opacity = 0.48 * catIn;
+    signPadMat.opacity = 0.34 * signIn;
+    cat.position.y = -3.15 + Math.sin(elapsed * 0.8) * 0.008;
+    sign.position.y = -1.95 + Math.sin(elapsed * 0.55 + 1.4) * 0.006;
 
     // sky slow drift
     sky.rotation.y = elapsed * 0.003;
