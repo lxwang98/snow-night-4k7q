@@ -2329,7 +2329,7 @@
       var cineK = Math.max(0, Math.min(1, (now - lastInteract - 3200) / 2600));
       camera.position.x += Math.sin(now * 0.00025) * 0.44 * cineK;
       camera.position.y += Math.sin(now * 0.00018 + 1.2) * 0.22 * cineK;
-      var dolly = 1.0 - 0.055 * (0.5 - 0.5 * Math.cos(now * 0.00035)) * cineK;
+      var dolly = 1.0 - 0.075 * (0.5 - 0.5 * Math.cos(now * 0.00030)) * cineK;
       camera.position.sub(target).multiplyScalar(dolly).add(target);
     }
 
